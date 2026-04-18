@@ -1,7 +1,7 @@
 'use client';
 
-import React from 'react';
-import { X, Minus, Plus, ShoppingBag, Trash2 } from 'lucide-react';
+import React, { useState } from 'react';
+import { X, Minus, Plus, ShoppingBag, Trash2, Check } from 'lucide-react';
 import Image from 'next/image';
 import { useCartStore } from '@/store/useCartStore';
 import { useSettingsStore } from '@/store/useSettingsStore';
@@ -13,9 +13,12 @@ interface CartDrawerProps {
 }
 
 const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
-  const { items, updateQuantity, removeItem, totalPrice } = useCartStore();
+  const { items, updateQuantity, removeItem, totalPrice, clearCart } = useCartStore();
   const { language } = useSettingsStore();
   const t = translations[language];
+  
+  const [isCheckingOut, setIsCheckingOut] = useState(false);
+  const [orderPlaced, setOrderPlaced] = useState(false);
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('en-RW', {
@@ -23,6 +26,22 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
       currency: 'RWF',
       minimumFractionDigits: 0,
     }).format(price);
+  };
+
+  const handleCheckout = () => {
+    setIsCheckingOut(true);
+    // Simulate payment processing
+    setTimeout(() => {
+      setIsCheckingOut(false);
+      setOrderPlaced(true);
+      clearCart();
+      
+      // Reset success state after 3 seconds
+      setTimeout(() => {
+        setOrderPlaced(false);
+        onClose();
+      }, 3000);
+    }, 1500);
   };
 
   return (
@@ -46,11 +65,11 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
           <div className="flex items-center justify-between p-6 border-b border-card-border">
             <div className="flex items-center gap-2">
               <ShoppingBag size={24} className="text-orange-600" />
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white">{t.cart}</h2>
+              <h2 className="text-xl font-bold text-black dark:text-white">{t.cart}</h2>
             </div>
             <button
               onClick={onClose}
-              className="p-2 -mr-2 text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
+              className="p-2 -mr-2 text-gray-400 hover:text-black dark:hover:text-white transition-colors"
             >
               <X size={24} />
             </button>
@@ -58,7 +77,15 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
 
           {/* Items List */}
           <div className="flex-1 overflow-y-auto p-6 space-y-6">
-            {items.length === 0 ? (
+            {orderPlaced ? (
+              <div className="h-full flex flex-col items-center justify-center text-center animate-in fade-in zoom-in duration-500">
+                <div className="w-20 h-20 bg-orange-50 dark:bg-orange-900/20 rounded-full flex items-center justify-center mb-4 text-orange-600">
+                  <Check size={40} strokeWidth={3} />
+                </div>
+                <h3 className="text-2xl font-bold text-black dark:text-white mb-2">{t.orderSuccessful}</h3>
+                <p className="text-gray-500 dark:text-gray-400">{t.orderThankYou}</p>
+              </div>
+            ) : items.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center text-center">
                 <div className="w-20 h-20 bg-gray-50 dark:bg-gray-900 rounded-full flex items-center justify-center mb-4 text-gray-300 dark:text-gray-700">
                   <ShoppingBag size={40} />
@@ -85,11 +112,11 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
                           className="object-cover p-1"
                         />
                       ) : (
-                        <ShoppingBag size={24} className="text-gray-300 dark:text-gray-700" />
+                        <ShoppingBag size={24} className="text-gray-400 dark:text-gray-600" />
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 line-clamp-1 mb-1">
+                      <h3 className="text-sm font-semibold text-black dark:text-white line-clamp-1 mb-1">
                         {item.product.name}
                       </h3>
                       <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">{item.product.unit}</p>
@@ -97,21 +124,21 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
                         <div className="flex items-center gap-3 bg-gray-50 dark:bg-gray-900 rounded-lg p-1">
                           <button
                             onClick={() => updateQuantity(item.product.id, item.quantity - 1)}
-                            className="w-7 h-7 flex items-center justify-center rounded-md bg-white dark:bg-gray-800 border border-card-border text-gray-600 dark:text-gray-400 hover:text-orange-600 shadow-sm"
+                            className="w-7 h-7 flex items-center justify-center rounded-md bg-white dark:bg-gray-800 border border-card-border text-gray-600 dark:text-gray-400 hover:text-orange-600 shadow-sm transition-colors"
                           >
                             <Minus size={14} />
                           </button>
-                          <span className="text-sm font-bold w-4 text-center dark:text-gray-200">
+                          <span className="text-sm font-bold w-4 text-center text-black dark:text-white">
                             {item.quantity}
                           </span>
                           <button
                             onClick={() => updateQuantity(item.product.id, item.quantity + 1)}
-                            className="w-7 h-7 flex items-center justify-center rounded-md bg-white dark:bg-gray-800 border border-card-border text-gray-600 dark:text-gray-400 hover:text-orange-600 shadow-sm"
+                            className="w-7 h-7 flex items-center justify-center rounded-md bg-white dark:bg-gray-800 border border-card-border text-gray-600 dark:text-gray-400 hover:text-orange-600 shadow-sm transition-colors"
                           >
                             <Plus size={14} />
                           </button>
                         </div>
-                        <span className="font-bold text-gray-900 dark:text-white">
+                        <span className="font-bold text-black dark:text-white">
                           {formatPrice(item.product.price * item.quantity)}
                         </span>
                       </div>
@@ -129,16 +156,25 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
           </div>
 
           {/* Footer */}
-          {items.length > 0 && (
+          {items.length > 0 && !orderPlaced && (
             <div className="p-6 border-t border-card-border bg-gray-50/50 dark:bg-gray-900/50">
               <div className="flex items-center justify-between mb-6">
                 <span className="text-gray-500 dark:text-gray-400 font-medium">{t.subtotal}</span>
-                <span className="text-2xl font-black text-gray-900 dark:text-white">
+                <span className="text-2xl font-black text-black dark:text-white">
                   {formatPrice(totalPrice())}
                 </span>
               </div>
-              <button className="w-full bg-orange-600 text-white py-4 rounded-2xl font-bold hover:bg-orange-700 transition-all active:scale-[0.98] shadow-lg shadow-orange-600/20">
-                {t.checkout}
+              <button 
+                onClick={handleCheckout}
+                disabled={isCheckingOut}
+                className="w-full bg-orange-600 text-white py-4 rounded-2xl font-bold hover:bg-orange-700 transition-all active:scale-[0.98] shadow-lg shadow-orange-600/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {isCheckingOut ? (
+                  <>
+                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    Processing...
+                  </>
+                ) : t.checkout}
               </button>
               <p className="text-center text-xs text-gray-400 dark:text-gray-500 mt-4">
                 {t.shippingTaxes}

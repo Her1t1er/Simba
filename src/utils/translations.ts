@@ -20,6 +20,9 @@ export const translations = {
     shippingTaxes: "Shipping and taxes calculated at checkout",
     noProducts: "No products found",
     tryAdjusting: "Try adjusting your filters or search query",
+    orderSuccessful: "Order Successful!",
+    orderThankYou: "Thank you for shopping with Simba Market.",
+    processing: "Processing...",
     categoryMap: {
       "Cosmetics & Personal Care": "Cosmetics & Personal Care",
       "Alcoholic Drinks": "Alcoholic Drinks",
@@ -55,6 +58,9 @@ export const translations = {
     shippingTaxes: "Frais de port et taxes calculés lors du paiement",
     noProducts: "Aucun produit trouvé",
     tryAdjusting: "Essayez d'ajuster vos filtres ou votre recherche",
+    orderSuccessful: "Commande réussie !",
+    orderThankYou: "Merci d'avoir fait vos achats chez Simba Market.",
+    processing: "Traitement...",
     categoryMap: {
       "Cosmetics & Personal Care": "Cosmétiques et soins personnels",
       "Alcoholic Drinks": "Boissons alcoolisées",
@@ -90,6 +96,9 @@ export const translations = {
     shippingTaxes: "Andi mafaranga n'imisoro bibarirwa ku muryango",
     noProducts: "Nta bicuruzwa byabonetse",
     tryAdjusting: "Gezageza guhindura ibyo ushakisha",
+    orderSuccessful: "Ishyura ryagenze neza!",
+    orderThankYou: "Murakoze guhahira kuri Simba Market.",
+    processing: "Turacyatunganya...",
     categoryMap: {
       "Cosmetics & Personal Care": "Ibirungo & Isuku",
       "Alcoholic Drinks": "Ibinyobwa bisindisha",

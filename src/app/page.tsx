@@ -62,7 +62,7 @@ export default function Home() {
           <main className="flex-1 min-w-0">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4">
               <div>
-                <h1 className="text-2xl font-black text-gray-900 dark:text-white mb-1">
+                <h1 className="text-2xl font-black text-black dark:text-white mb-1">
                   {selectedCategory 
                     ? (t.categoryMap[selectedCategory as keyof typeof t.categoryMap] || selectedCategory)
                     : t.allProducts}

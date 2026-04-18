@@ -2,10 +2,10 @@
 
 :root {
   --background: #ffffff;
-  --foreground: #111827;
+  --foreground: #000000;
   --card: #ffffff;
   --card-border: #f3f4f6;
-  --nav-bg: rgba(255, 255, 255, 0.8);
+  --nav-bg: #ffffff;
 }
 
 .dark {

@@ -41,7 +41,7 @@ const Sidebar: React.FC<SidebarProps> = ({
       >
         <div className="flex items-center gap-2 mb-8">
           <LayoutGrid size={20} className="text-orange-600" />
-          <h2 className="text-lg font-bold text-slate-900 dark:text-white">{t.categories}</h2>
+          <h2 className="text-lg font-bold text-black dark:text-white">{t.categories}</h2>
         </div>
 
         <nav className="space-y-1">

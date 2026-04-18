@@ -32,7 +32,7 @@ const ProductGrid: React.FC<ProductGridProps> = ({ products, isLoading }) => {
         <div className="w-16 h-16 bg-gray-50 dark:bg-gray-900 rounded-full flex items-center justify-center mb-4 text-gray-300 dark:text-gray-700">
           <ShoppingBag size={32} />
         </div>
-        <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">{t.noProducts}</h3>
+        <h3 className="text-lg font-bold text-black dark:text-white mb-1">{t.noProducts}</h3>
         <p className="text-gray-500 dark:text-gray-400">{t.tryAdjusting}</p>
       </div>
     );
