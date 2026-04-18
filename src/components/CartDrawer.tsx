@@ -72,17 +72,23 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
                 </button>
               </div>
             ) : (
-              items.map((item) => (
-                <div key={item.product.id} className="flex gap-4">
-                  <div className="relative w-20 h-20 bg-gray-50 dark:bg-gray-800 rounded-xl overflow-hidden flex-shrink-0">
-                    <Image
-                      src={item.product.image}
-                      alt={item.product.name}
-                      fill
-                      className="object-cover p-1"
-                    />
-                  </div>
-                  <div className="flex-1 min-w-0">
+              items.map((item) => {
+                const isPlaceholder = item.product.image.includes('placehold.co') || !item.product.image;
+                return (
+                  <div key={item.product.id} className="flex gap-4">
+                    <div className="relative w-20 h-20 bg-gray-50 dark:bg-gray-800 rounded-xl overflow-hidden flex-shrink-0 flex items-center justify-center">
+                      {!isPlaceholder ? (
+                        <Image
+                          src={item.product.image}
+                          alt={item.product.name}
+                          fill
+                          className="object-cover p-1"
+                        />
+                      ) : (
+                        <ShoppingBag size={24} className="text-gray-300 dark:text-gray-700" />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
                     <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 line-clamp-1 mb-1">
                       {item.product.name}
                     </h3>

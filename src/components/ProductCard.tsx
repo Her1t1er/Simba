@@ -26,17 +26,26 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
     }).format(price);
   };
 
+  const isPlaceholder = product.image.includes('placehold.co') || !product.image;
+
   return (
     <div className="group bg-card rounded-2xl border border-card-border p-4 hover:shadow-xl hover:shadow-orange-900/5 transition-all duration-300 flex flex-col h-full">
       {/* Image Container */}
-      <div className="relative aspect-square w-full mb-4 bg-gray-50 dark:bg-gray-800 rounded-xl overflow-hidden">
-        <Image
-          src={product.image}
-          alt={product.name}
-          fill
-          className="object-cover group-hover:scale-105 transition-transform duration-500"
-          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-        />
+      <div className="relative aspect-square w-full mb-4 bg-gray-50 dark:bg-gray-800 rounded-xl overflow-hidden flex items-center justify-center">
+        {!isPlaceholder ? (
+          <Image
+            src={product.image}
+            alt={product.name}
+            fill
+            className="object-cover group-hover:scale-105 transition-transform duration-500"
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+          />
+        ) : (
+          <div className="flex flex-col items-center justify-center text-gray-300 dark:text-gray-700">
+            <ShoppingCart size={48} strokeWidth={1.5} />
+            <span className="text-[10px] mt-2 font-medium uppercase tracking-wider opacity-50">No Image</span>
+          </div>
+        )}
         {!product.inStock && (
           <div className="absolute inset-0 bg-white/60 dark:bg-black/60 flex items-center justify-center backdrop-blur-[2px]">
             <span className="bg-gray-900 text-white text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded">
