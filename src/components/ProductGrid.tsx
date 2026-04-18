@@ -10,17 +10,22 @@ import { translations } from '@/utils/translations';
 interface ProductGridProps {
   products: Product[];
   isLoading?: boolean;
+  viewMode?: 'grid' | 'list';
 }
 
-const ProductGrid: React.FC<ProductGridProps> = ({ products, isLoading }) => {
+const ProductGrid: React.FC<ProductGridProps> = ({ products, isLoading, viewMode = 'grid' }) => {
   const { language } = useSettingsStore();
   const t = translations[language];
 
   if (isLoading) {
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6 animate-pulse">
+      <div className={
+        viewMode === 'grid' 
+          ? "grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6 animate-pulse"
+          : "flex flex-col gap-4 animate-pulse"
+      }>
         {[...Array(8)].map((_, i) => (
-          <div key={i} className="h-80 bg-gray-100 dark:bg-gray-800 rounded-2xl" />
+          <div key={i} className={viewMode === 'grid' ? "h-80 bg-gray-100 dark:bg-gray-800 rounded-2xl" : "h-32 bg-gray-100 dark:bg-gray-800 rounded-2xl"} />
         ))}
       </div>
     );
@@ -39,9 +44,13 @@ const ProductGrid: React.FC<ProductGridProps> = ({ products, isLoading }) => {
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6">
+    <div className={
+      viewMode === 'grid'
+        ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
+        : "flex flex-col gap-3"
+    }>
       {products.map((product) => (
-        <ProductCard key={product.id} product={product} />
+        <ProductCard key={product.id} product={product} viewMode={viewMode} />
       ))}
     </div>
   );

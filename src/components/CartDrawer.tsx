@@ -21,11 +21,7 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
   const [orderPlaced, setOrderPlaced] = useState(false);
 
   const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('en-RW', {
-      style: 'currency',
-      currency: 'RWF',
-      minimumFractionDigits: 0,
-    }).format(price);
+    return new Intl.NumberFormat('en-US').format(price) + ' FRW';
   };
 
   const handleCheckout = () => {

@@ -31,7 +31,7 @@ const Navbar: React.FC<NavbarProps> = ({ onSearchChange, onCartToggle, onMenuTog
           <div className="flex items-center gap-2">
             <button 
               onClick={onMenuToggle}
-              className="p-2 -ml-2 lg:hidden text-black dark:text-gray-400 hover:text-orange-600 transition-colors"
+              className="p-2 -ml-2 lg:hidden text-black dark:text-gray-400 text-gray-600 hover:text-orange-600 transition-colors"
             >
               <Menu size={24} />
             </button>
@@ -62,7 +62,7 @@ const Navbar: React.FC<NavbarProps> = ({ onSearchChange, onCartToggle, onMenuTog
           <div className="flex items-center gap-1 sm:gap-2">
             {/* Language Selector */}
             <div className="relative group">
-              <button className="p-2 text-black dark:text-gray-400 hover:text-orange-600 transition-colors flex items-center gap-1">
+              <button className="p-2 text-black dark:text-gray-400 text-gray-600 hover:text-orange-600 transition-colors flex items-center gap-1">
                 <Languages size={20} />
                 <span className="text-xs font-bold uppercase hidden sm:block">{language}</span>
               </button>
@@ -72,7 +72,7 @@ const Navbar: React.FC<NavbarProps> = ({ onSearchChange, onCartToggle, onMenuTog
                     key={lang.code}
                     onClick={() => setLanguage(lang.code)}
                     className={`w-full text-left px-4 py-2 text-sm hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-colors ${
-                      language === lang.code ? 'text-orange-600 font-bold' : 'text-black dark:text-gray-400'
+                      language === lang.code ? 'text-orange-600 font-bold' : 'text-black dark:text-gray-400 text-gray-600'
                     }`}
                   >
                     {lang.label}
@@ -84,7 +84,7 @@ const Navbar: React.FC<NavbarProps> = ({ onSearchChange, onCartToggle, onMenuTog
             {/* Theme Toggle */}
             <button
               onClick={toggleTheme}
-              className="p-2 text-black dark:text-gray-400 hover:text-orange-600 transition-colors"
+              className="p-2 text-black dark:text-gray-400 text-gray-600 hover:text-orange-600 transition-colors"
             >
               {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
             </button>
@@ -92,7 +92,7 @@ const Navbar: React.FC<NavbarProps> = ({ onSearchChange, onCartToggle, onMenuTog
             {/* Cart Icon */}
             <button
               onClick={onCartToggle}
-              className="relative p-2 text-black dark:text-gray-400 hover:text-orange-600 transition-colors group"
+              className="relative p-2 text-black dark:text-gray-400 text-gray-600 hover:text-orange-600 transition-colors group"
             >
               <ShoppingCart size={22} />
               {totalItems > 0 && (

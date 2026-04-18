@@ -53,7 +53,7 @@ const Sidebar: React.FC<SidebarProps> = ({
             className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-colors ${
               selectedCategory === null
                 ? 'bg-orange-50 dark:bg-orange-900/10 text-orange-700 dark:text-orange-500 font-semibold'
-                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'
+                : 'text-gray-600 dark:text-gray-400 text-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800'
             }`}
           >
             <span>{t.allProducts}</span>
@@ -70,7 +70,7 @@ const Sidebar: React.FC<SidebarProps> = ({
               className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-colors ${
                 selectedCategory === category
                   ? 'bg-orange-50 dark:bg-orange-900/10 text-orange-700 dark:text-orange-500 font-semibold'
-                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'
+                  : 'text-gray-600 dark:text-gray-400 text-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800'
               }`}
             >
               <span className="truncate">

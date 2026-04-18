@@ -18,6 +18,7 @@ export default function Home() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
   const { language } = useSettingsStore();
   const t = translations[language];
@@ -67,22 +68,36 @@ export default function Home() {
                     ? (t.categoryMap[selectedCategory as keyof typeof t.categoryMap] || selectedCategory)
                     : t.allProducts}
                 </h1>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
+                <p className="text-sm text-gray-500 dark:text-gray-400 text-gray-600">
                   {filteredProducts.length} {t.items}
                 </p>
               </div>
               
               <div className="flex items-center gap-2 bg-white dark:bg-gray-900 p-1 rounded-xl border border-card-border shadow-sm w-fit">
-                <button className="px-4 py-1.5 text-xs font-bold text-orange-600 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
+                <button 
+                  onClick={() => setViewMode('grid')}
+                  className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-all ${
+                    viewMode === 'grid' 
+                      ? 'text-orange-600 bg-orange-50 dark:bg-orange-900/20' 
+                      : 'text-gray-400 hover:text-black dark:hover:text-white'
+                  }`}
+                >
                   {t.grid}
                 </button>
-                <button className="px-4 py-1.5 text-xs font-bold text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 rounded-lg transition-colors">
+                <button 
+                  onClick={() => setViewMode('list')}
+                  className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-all ${
+                    viewMode === 'list' 
+                      ? 'text-orange-600 bg-orange-50 dark:bg-orange-900/20' 
+                      : 'text-gray-400 hover:text-black dark:hover:text-white'
+                  }`}
+                >
                   {t.list}
                 </button>
               </div>
             </div>
 
-            <ProductGrid products={filteredProducts} />
+            <ProductGrid products={filteredProducts} viewMode={viewMode} />
           </main>
         </div>
       </div>

@@ -1,11 +1,12 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
+  --background: #f9fafb;
   --foreground: #000000;
   --card: #ffffff;
   --card-border: #f3f4f6;
   --nav-bg: #ffffff;
+  color-scheme: light;
 }
 
 .dark {
@@ -13,7 +14,8 @@
   --foreground: #f9fafb;
   --card: #111827;
   --card-border: #1f2937;
-  --nav-bg: rgba(3, 7, 18, 0.8);
+  --nav-bg: #111827;
+  color-scheme: dark;
 }
 
 @theme inline {
@@ -29,6 +31,9 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+
+/* Force dark mode only when .dark class is present */
+@variant dark (&:where(.dark, .dark *));
 
 /* Custom Scrollbar */
 ::-webkit-scrollbar {
