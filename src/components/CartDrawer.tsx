@@ -123,8 +123,8 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
                     <Trash2 size={18} />
                   </button>
                 </div>
-              ))
-            )}
+              );
+            })}
           </div>
 
           {/* Footer */}
