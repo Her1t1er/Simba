@@ -27,9 +27,11 @@ export const translations = {
       "Kitchenware & Electronics": "Kitchenware & Electronics",
       "General": "General",
       "Cleaning & Sanitary": "Cleaning & Sanitary",
-      "Sports & Fitness": "Sports & Fitness",
+      "Sports & Wellness": "Sports & Wellness",
       "Stationery": "Stationery",
-      "Baby Products": "Baby Products"
+      "Baby Products": "Baby Products",
+      "Kitchen Storage": "Kitchen Storage",
+      "Pet Care": "Pet Care"
     }
   },
   fr: {
@@ -60,9 +62,11 @@ export const translations = {
       "Kitchenware & Electronics": "Cuisine et électronique",
       "General": "Général",
       "Cleaning & Sanitary": "Nettoyage et sanitaire",
-      "Sports & Fitness": "Sports et fitness",
+      "Sports & Wellness": "Sports et bien-être",
       "Stationery": "Papeterie",
-      "Baby Products": "Produits pour bébé"
+      "Baby Products": "Produits pour bébé",
+      "Kitchen Storage": "Rangement de cuisine",
+      "Pet Care": "Soins des animaux"
     }
   },
   rw: {
@@ -93,9 +97,11 @@ export const translations = {
       "Kitchenware & Electronics": "Ibikoresho byo mu gikoni",
       "General": "Ibisanzwe",
       "Cleaning & Sanitary": "Isuku",
-      "Sports & Fitness": "Imyitozo ngororamubiri",
+      "Sports & Wellness": "Imyitozo ngororamubiri & Imibereho myiza",
       "Stationery": "Ibikoresho by'ishuri",
-      "Baby Products": "Ibikoresho by'abana"
+      "Baby Products": "Ibikoresho by'abana",
+      "Kitchen Storage": "Ibirindwa mu gikoni",
+      "Pet Care": "Iby'amatungo"
     }
   }
 };

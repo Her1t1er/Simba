@@ -89,42 +89,43 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
-                    <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 line-clamp-1 mb-1">
-                      {item.product.name}
-                    </h3>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">{item.product.unit}</p>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3 bg-gray-50 dark:bg-gray-900 rounded-lg p-1">
-                        <button
-                          onClick={() => updateQuantity(item.product.id, item.quantity - 1)}
-                          className="w-7 h-7 flex items-center justify-center rounded-md bg-white dark:bg-gray-800 border border-card-border text-gray-600 dark:text-gray-400 hover:text-orange-600 shadow-sm"
-                        >
-                          <Minus size={14} />
-                        </button>
-                        <span className="text-sm font-bold w-4 text-center dark:text-gray-200">
-                          {item.quantity}
+                      <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 line-clamp-1 mb-1">
+                        {item.product.name}
+                      </h3>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">{item.product.unit}</p>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3 bg-gray-50 dark:bg-gray-900 rounded-lg p-1">
+                          <button
+                            onClick={() => updateQuantity(item.product.id, item.quantity - 1)}
+                            className="w-7 h-7 flex items-center justify-center rounded-md bg-white dark:bg-gray-800 border border-card-border text-gray-600 dark:text-gray-400 hover:text-orange-600 shadow-sm"
+                          >
+                            <Minus size={14} />
+                          </button>
+                          <span className="text-sm font-bold w-4 text-center dark:text-gray-200">
+                            {item.quantity}
+                          </span>
+                          <button
+                            onClick={() => updateQuantity(item.product.id, item.quantity + 1)}
+                            className="w-7 h-7 flex items-center justify-center rounded-md bg-white dark:bg-gray-800 border border-card-border text-gray-600 dark:text-gray-400 hover:text-orange-600 shadow-sm"
+                          >
+                            <Plus size={14} />
+                          </button>
+                        </div>
+                        <span className="font-bold text-gray-900 dark:text-white">
+                          {formatPrice(item.product.price * item.quantity)}
                         </span>
-                        <button
-                          onClick={() => updateQuantity(item.product.id, item.quantity + 1)}
-                          className="w-7 h-7 flex items-center justify-center rounded-md bg-white dark:bg-gray-800 border border-card-border text-gray-600 dark:text-gray-400 hover:text-orange-600 shadow-sm"
-                        >
-                          <Plus size={14} />
-                        </button>
                       </div>
-                      <span className="font-bold text-gray-900 dark:text-white">
-                        {formatPrice(item.product.price * item.quantity)}
-                      </span>
                     </div>
+                    <button
+                      onClick={() => removeItem(item.product.id)}
+                      className="p-1 self-start text-gray-300 dark:text-gray-700 hover:text-red-500 transition-colors"
+                    >
+                      <Trash2 size={18} />
+                    </button>
                   </div>
-                  <button
-                    onClick={() => removeItem(item.product.id)}
-                    className="p-1 self-start text-gray-300 dark:text-gray-700 hover:text-red-500 transition-colors"
-                  >
-                    <Trash2 size={18} />
-                  </button>
-                </div>
-              );
-            })}
+                );
+              })
+            )}
           </div>
 
           {/* Footer */}
