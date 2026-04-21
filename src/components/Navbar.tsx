@@ -1,11 +1,13 @@
 'use client';
 
 import React from 'react';
-import { ShoppingCart, Search, Menu, Sun, Moon, Languages } from 'lucide-react';
+import { ShoppingCart, Search, Menu, Sun, Moon, Languages, MapPin } from 'lucide-react';
 import { useCartStore } from '@/store/useCartStore';
 import { useSettingsStore, Language } from '@/store/useSettingsStore';
+import { useBranchStore } from '@/store/useBranchStore';
 import { translations } from '@/utils/translations';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 interface NavbarProps {
   onSearchChange: (query: string) => void;
@@ -14,9 +16,16 @@ interface NavbarProps {
 }
 
 const Navbar: React.FC<NavbarProps> = ({ onSearchChange, onCartToggle, onMenuToggle }) => {
+  const router = useRouter();
   const totalItems = useCartStore((state) => state.totalItems());
+  const { selectedBranch, clearBranch } = useBranchStore();
   const { language, setLanguage, theme, toggleTheme } = useSettingsStore();
   const t = translations[language];
+
+  const handleBranchChange = () => {
+    clearBranch();
+    router.push('/');
+  };
 
   const languages: { code: Language; label: string }[] = [
     { code: 'en', label: 'English' },
@@ -61,6 +70,15 @@ const Navbar: React.FC<NavbarProps> = ({ onSearchChange, onCartToggle, onMenuTog
 
           {/* Actions */}
           <div className="flex items-center gap-1 sm:gap-2">
+            {/* Branch Selector (Desktop) */}
+            <button 
+              onClick={handleBranchChange}
+              className="hidden lg:flex items-center gap-2 px-3 py-1.5 bg-gray-50 dark:bg-gray-900 border border-card-border rounded-xl text-xs font-bold text-gray-600 dark:text-gray-400 hover:text-orange-600 hover:border-orange-500 transition-all group"
+            >
+              <MapPin size={14} className="text-orange-600" />
+              <span className="max-w-[120px] truncate">{selectedBranch}</span>
+            </button>
+
             {/* Language Selector */}
             <div className="relative group">
               <button className="p-2 text-black dark:text-gray-400 text-gray-600 hover:text-orange-600 transition-colors flex items-center gap-1">

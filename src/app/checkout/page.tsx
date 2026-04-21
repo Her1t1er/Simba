@@ -4,35 +4,70 @@ import React, { useState } from 'react';
 import Navbar from '@/components/Navbar';
 import { useCartStore } from '@/store/useCartStore';
 import { useSettingsStore } from '@/store/useSettingsStore';
+import { useBranchStore } from '@/store/useBranchStore';
+import { useAuthStore } from '@/store/useAuthStore';
+import { useOrderStore, Order } from '@/store/useOrderStore';
 import { translations } from '@/utils/translations';
-import { Check, CreditCard, Truck, Smartphone, Banknote, ShoppingBag, ArrowRight } from 'lucide-react';
+import { Check, CreditCard, Truck, Smartphone, Banknote, ShoppingBag, ArrowRight, MapPin, User as UserIcon } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-
-const districts = [
-  'Gasabo', 'Kicukiro', 'Nyarugenge', 'Musanze', 'Rubavu', 'Huye', 'Rwamagana', 'Kayonza', 'Bugesera'
-];
 
 export default function CheckoutPage() {
   const router = useRouter();
   const { items, totalPrice, clearCart } = useCartStore();
+  const { selectedBranch } = useBranchStore();
+  const { user, isAuthenticated } = useAuthStore();
+  const { addOrder } = useOrderStore();
   const { language } = useSettingsStore();
   const t = translations[language];
 
-  const [paymentMethod, setPaymentMethod] = useState<'mtn' | 'airtel' | 'cash'>('mtn');
+  const [isHydrated, setIsHydrated] = React.useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<'mtn' | 'airtel' | 'card'>('mtn');
   const [isProcessing, setIsProcessing] = useState(false);
   const [orderPlaced, setOrderPlaced] = useState(false);
+
+  React.useEffect(() => {
+    setIsHydrated(true);
+    if (!selectedBranch) {
+      router.push('/');
+    }
+    if (isHydrated && !isAuthenticated) {
+      router.push('/login?redirect=/checkout');
+    }
+  }, [selectedBranch, isAuthenticated, isHydrated, router]);
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('en-US').format(price) + ' RWF';
   };
 
+  if (!isHydrated || !selectedBranch || !user) return null;
+
+  const prepayment = totalPrice() * 0.1;
+  const balanceDue = totalPrice() * 0.9;
+
   const handlePlaceOrder = (e: React.FormEvent) => {
     e.preventDefault();
     setIsProcessing(true);
     
+    // Create actual order object
+    const newOrder: Order = {
+      id: `ORD-${Math.floor(1000 + Math.random() * 9000)}`,
+      customerName: user.name,
+      customerEmail: user.email,
+      branch: selectedBranch,
+      items: items.map(item => ({ product: item.product, quantity: item.quantity })),
+      total: totalPrice(),
+      prepaymentAmount: prepayment,
+      balanceDue: balanceDue,
+      prepaymentStatus: 'pending', // Will be verified by staff
+      orderStatus: 'pending',
+      createdAt: new Date().toISOString(),
+      stockVerifiedItems: []
+    };
+
     // Simulate order placement
     setTimeout(() => {
+      addOrder(newOrder);
       setIsProcessing(false);
       setOrderPlaced(true);
       clearCart();
@@ -82,83 +117,23 @@ export default function CheckoutPage() {
           {/* Left Column: Forms */}
           <div className="lg:col-span-8 space-y-8">
             
-            {/* Step 1: Delivery Information */}
+            {/* Customer Information (Read-only) */}
             <div className="bg-white dark:bg-gray-900 rounded-3xl p-6 md:p-8 border border-card-border shadow-sm">
-              <div className="flex items-center gap-4 mb-8">
+              <div className="flex items-center gap-4 mb-6">
                 <div className="w-10 h-10 bg-orange-600 rounded-full flex items-center justify-center text-white font-bold">
-                  1
+                  <UserIcon size={20} />
                 </div>
-                <h2 className="text-2xl font-bold text-black dark:text-white">{t.deliveryInformation}</h2>
+                <h2 className="text-2xl font-bold text-black dark:text-white">Account Details</h2>
               </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <label className="text-sm font-bold text-gray-700 dark:text-gray-300">{t.firstName}</label>
-                  <input
-                    required
-                    type="text"
-                    className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-card-border rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all dark:text-white"
-                  />
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-2xl border border-card-border">
+                  <p className="text-xs font-bold text-gray-500 uppercase mb-1">{t.firstName} & {t.lastName}</p>
+                  <p className="font-bold text-black dark:text-white">{user.name}</p>
                 </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-bold text-gray-700 dark:text-gray-300">{t.lastName}</label>
-                  <input
-                    required
-                    type="text"
-                    className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-card-border rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all dark:text-white"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-bold text-gray-700 dark:text-gray-300">{t.emailAddress}</label>
-                  <input
-                    required
-                    type="email"
-                    className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-card-border rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all dark:text-white"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-bold text-gray-700 dark:text-gray-300">{t.phoneNumber}</label>
-                  <input
-                    required
-                    type="tel"
-                    placeholder="07X XXX XXXX"
-                    className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-card-border rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all dark:text-white"
-                  />
-                </div>
-                <div className="md:col-span-2 space-y-2">
-                  <label className="text-sm font-bold text-gray-700 dark:text-gray-300">{t.deliveryAddress}</label>
-                  <input
-                    required
-                    type="text"
-                    className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-card-border rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all dark:text-white"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-bold text-gray-700 dark:text-gray-300">{t.city}</label>
-                  <input
-                    required
-                    type="text"
-                    defaultValue="Kigali"
-                    className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-card-border rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all dark:text-white"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-bold text-gray-700 dark:text-gray-300">{t.district}</label>
-                  <select
-                    required
-                    className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-card-border rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all dark:text-white appearance-none"
-                  >
-                    <option value="">{t.selectDistrict}</option>
-                    {districts.map(d => <option key={d} value={d}>{d}</option>)}
-                  </select>
-                </div>
-                <div className="md:col-span-2 space-y-2">
-                  <label className="text-sm font-bold text-gray-700 dark:text-gray-300">{t.deliveryNotes}</label>
-                  <textarea
-                    rows={3}
-                    className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-card-border rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all dark:text-white"
-                    placeholder="Any special instructions..."
-                  />
+                <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-2xl border border-card-border">
+                  <p className="text-xs font-bold text-gray-500 uppercase mb-1">{t.emailAddress}</p>
+                  <p className="font-bold text-black dark:text-white">{user.email}</p>
                 </div>
               </div>
             </div>
@@ -173,6 +148,29 @@ export default function CheckoutPage() {
               </div>
 
               <div className="space-y-4">
+                {/* Credit/Debit Card */}
+                <div 
+                  onClick={() => setPaymentMethod('card')}
+                  className={`flex items-center gap-4 p-4 rounded-2xl border-2 cursor-pointer transition-all ${
+                    paymentMethod === 'card' 
+                      ? 'border-orange-500 bg-orange-50/50 dark:bg-orange-900/10' 
+                      : 'border-card-border hover:border-gray-300 dark:hover:border-gray-700'
+                  }`}
+                >
+                  <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
+                    paymentMethod === 'card' ? 'border-orange-500' : 'border-gray-300'
+                  }`}>
+                    {paymentMethod === 'card' && <div className="w-3 h-3 bg-orange-500 rounded-full" />}
+                  </div>
+                  <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center text-blue-600">
+                    <CreditCard size={24} />
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-bold text-black dark:text-white">{t.creditCard}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Pay securely with your card</p>
+                  </div>
+                </div>
+
                 {/* MTN MoMo */}
                 <div 
                   onClick={() => setPaymentMethod('mtn')}
@@ -219,28 +217,49 @@ export default function CheckoutPage() {
                   </div>
                 </div>
 
-                {/* Cash on Delivery */}
-                <div 
-                  onClick={() => setPaymentMethod('cash')}
-                  className={`flex items-center gap-4 p-4 rounded-2xl border-2 cursor-pointer transition-all ${
-                    paymentMethod === 'cash' 
-                      ? 'border-orange-500 bg-orange-50/50 dark:bg-orange-900/10' 
-                      : 'border-card-border hover:border-gray-300 dark:hover:border-gray-700'
-                  }`}
-                >
-                  <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
-                    paymentMethod === 'cash' ? 'border-orange-500' : 'border-gray-300'
-                  }`}>
-                    {paymentMethod === 'cash' && <div className="w-3 h-3 bg-orange-500 rounded-full" />}
+                {/* Credit Card Form (Conditional) */}
+                {paymentMethod === 'card' && (
+                  <div className="mt-6 space-y-4 animate-in slide-in-from-top-2 duration-300">
+                    <div className="space-y-2">
+                      <label className="text-sm font-bold text-gray-700 dark:text-gray-300">{t.cardNumber}</label>
+                      <input
+                        required
+                        type="text"
+                        placeholder="0000 0000 0000 0000"
+                        className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-card-border rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all dark:text-white"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <label className="text-sm font-bold text-gray-700 dark:text-gray-300">{t.expiryDate}</label>
+                        <input
+                          required
+                          type="text"
+                          placeholder="MM/YY"
+                          className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-card-border rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all dark:text-white"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-bold text-gray-700 dark:text-gray-300">{t.cvv}</label>
+                        <input
+                          required
+                          type="text"
+                          placeholder="123"
+                          className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-card-border rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all dark:text-white"
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-bold text-gray-700 dark:text-gray-300">{t.cardHolder}</label>
+                      <input
+                        required
+                        type="text"
+                        placeholder="John Doe"
+                        className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-card-border rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all dark:text-white"
+                      />
+                    </div>
                   </div>
-                  <div className="w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-xl flex items-center justify-center text-green-600">
-                    <Banknote size={24} />
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-bold text-black dark:text-white">{t.cashOnDelivery}</p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Pay when you receive your order</p>
-                  </div>
-                </div>
+                )}
 
                 {/* Mobile Money Number Input (Conditional) */}
                 {(paymentMethod === 'mtn' || paymentMethod === 'airtel') && (
@@ -256,12 +275,26 @@ export default function CheckoutPage() {
                 )}
               </div>
             </div>
+
+            {/* Pickup Notes (Moved here) */}
+            <div className="bg-white dark:bg-gray-900 rounded-3xl p-6 md:p-8 border border-card-border shadow-sm">
+              <label className="text-lg font-bold text-black dark:text-white mb-4 block">{t.pickupNotes}</label>
+              <textarea
+                rows={3}
+                className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-card-border rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all dark:text-white"
+                placeholder="Any special instructions for picking up your order..."
+              />
+            </div>
           </div>
 
           {/* Right Column: Order Summary */}
           <div className="lg:col-span-4 lg:sticky lg:top-24">
             <div className="bg-white dark:bg-gray-900 rounded-3xl p-6 md:p-8 border border-card-border shadow-sm">
-              <h2 className="text-2xl font-bold text-black dark:text-white mb-6">{t.orderSummary}</h2>
+              <h2 className="text-2xl font-bold text-black dark:text-white mb-2">{t.orderSummary}</h2>
+              <div className="flex items-center gap-2 mb-6 px-3 py-1.5 bg-orange-50 dark:bg-orange-900/20 rounded-xl w-fit">
+                <MapPin size={14} className="text-orange-600" />
+                <span className="text-xs font-bold text-orange-600">{selectedBranch}</span>
+              </div>
               
               <div className="space-y-4 mb-6 max-h-[400px] overflow-y-auto pr-2">
                 {items.map((item) => (
@@ -294,9 +327,13 @@ export default function CheckoutPage() {
                   <span>{t.subtotal}</span>
                   <span className="font-bold text-black dark:text-white">{formatPrice(totalPrice())}</span>
                 </div>
+                <div className="flex justify-between text-orange-600">
+                  <span className="font-bold">{t.prepaymentAmount}</span>
+                  <span className="font-bold">{formatPrice(prepayment)}</span>
+                </div>
                 <div className="flex justify-between text-gray-500 dark:text-gray-400">
-                  <span>{t.deliveryFee}</span>
-                  <span className="font-bold text-green-600">{t.free}</span>
+                  <span>{t.dueAtPickup}</span>
+                  <span className="font-bold">{formatPrice(balanceDue)}</span>
                 </div>
                 <div className="flex justify-between items-center pt-4 border-t border-card-border">
                   <span className="text-lg font-bold text-black dark:text-white">{t.total}</span>

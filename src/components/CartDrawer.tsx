@@ -5,6 +5,7 @@ import { X, Minus, Plus, ShoppingBag, Trash2, Check } from 'lucide-react';
 import Image from 'next/image';
 import { useCartStore } from '@/store/useCartStore';
 import { useSettingsStore } from '@/store/useSettingsStore';
+import { useAuthStore } from '@/store/useAuthStore';
 import { translations } from '@/utils/translations';
 import { useRouter } from 'next/navigation';
 
@@ -17,15 +18,20 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
   const router = useRouter();
   const { items, updateQuantity, removeItem, totalPrice, clearCart } = useCartStore();
   const { language } = useSettingsStore();
+  const { isAuthenticated } = useAuthStore();
   const t = translations[language];
   
   const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('en-US').format(price) + ' FRW';
+    return new Intl.NumberFormat('en-US').format(price) + ' RWF';
   };
 
   const handleCheckout = () => {
     onClose();
-    router.push('/checkout');
+    if (isAuthenticated) {
+      router.push('/checkout');
+    } else {
+      router.push('/login?redirect=/checkout');
+    }
   };
 
   return (
