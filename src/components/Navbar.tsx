@@ -5,6 +5,7 @@ import { ShoppingCart, Search, Menu, Sun, Moon, Languages } from 'lucide-react';
 import { useCartStore } from '@/store/useCartStore';
 import { useSettingsStore, Language } from '@/store/useSettingsStore';
 import { translations } from '@/utils/translations';
+import Link from 'next/link';
 
 interface NavbarProps {
   onSearchChange: (query: string) => void;
@@ -35,14 +36,14 @@ const Navbar: React.FC<NavbarProps> = ({ onSearchChange, onCartToggle, onMenuTog
             >
               <Menu size={24} />
             </button>
-            <div className="flex items-center gap-2 cursor-pointer">
+            <Link href="/" className="flex items-center gap-2 cursor-pointer">
               <div className="w-8 h-8 bg-orange-600 rounded-lg flex items-center justify-center text-white font-bold text-xl">
                 S
               </div>
               <span className="text-xl font-bold text-black dark:text-white hidden sm:block">
                 Simba<span className="text-orange-600">Market</span>
               </span>
-            </div>
+            </Link>
           </div>
 
           {/* Search Bar */}
