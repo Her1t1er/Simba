@@ -1,16 +1,14 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, Suspense } from 'react';
 import productDataRaw from '@/data/simba_products.json';
 import { ProductData } from '@/types';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { 
   Search, 
   Plus, 
-  MoreVertical, 
   Edit2, 
   Trash2, 
-  ExternalLink,
   ShoppingBag,
   X
 } from 'lucide-react';
@@ -18,7 +16,7 @@ import Image from 'next/image';
 
 const productData = productDataRaw as ProductData;
 
-export default function StaffProductsPage() {
+function ProductsContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const categoryFilter = searchParams.get('category');
@@ -141,5 +139,17 @@ export default function StaffProductsPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function StaffProductsPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center py-20">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600"></div>
+      </div>
+    }>
+      <ProductsContent />
+    </Suspense>
   );
 }
