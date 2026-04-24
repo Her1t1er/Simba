@@ -1,59 +1,75 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { Branch } from './useBranchStore';
 
-export type UserRole = 'customer' | 'manager';
-
-interface User {
+export interface User {
   name: string;
   email: string;
-  role: UserRole;
-  managedBranch?: Branch;
+  role: string;
+  managedBranch?: string;
 }
 
 interface AuthState {
-  isAuthenticated: boolean;
-  user: User | null;
-  login: (email: string, name?: string) => void;
-  staffLogin: (email: string, branch: Branch, name?: string) => void;
-  signup: (email: string, name: string) => void;
+  // Customer Session
+  customerUser: User | null;
+  customerToken: string | null;
+  isCustomerAuthenticated: boolean;
+  
+  // Staff Session
+  staffUser: User | null;
+  staffToken: string | null;
+  isStaffAuthenticated: boolean;
+
+  // Actions
+  login: (user: User, token: string) => void;
+  staffLogin: (user: User, token: string) => void;
+  signup: (user: User, token: string) => void;
   logout: () => void;
+  staffLogout: () => void;
 }
 
 export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
-      isAuthenticated: false,
-      user: null,
-      login: (email, name) => 
+      customerUser: null,
+      customerToken: null,
+      isCustomerAuthenticated: false,
+      
+      staffUser: null,
+      staffToken: null,
+      isStaffAuthenticated: false,
+
+      login: (user, token) => 
         set({ 
-          isAuthenticated: true, 
-          user: { 
-            email, 
-            name: name || email.split('@')[0],
-            role: 'customer'
-          } 
+          isCustomerAuthenticated: true, 
+          customerUser: user,
+          customerToken: token
         }),
-      staffLogin: (email, branch, name) =>
+
+      staffLogin: (user, token) =>
         set({
-          isAuthenticated: true,
-          user: {
-            email,
-            name: name || email.split('@')[0],
-            role: 'manager',
-            managedBranch: branch
-          }
+          isStaffAuthenticated: true,
+          staffUser: user,
+          staffToken: token
         }),
-      signup: (email, name) => 
+
+      signup: (user, token) => 
         set({ 
-          isAuthenticated: true, 
-          user: { 
-            email, 
-            name,
-            role: 'customer'
-          } 
+          isCustomerAuthenticated: true, 
+          customerUser: user,
+          customerToken: token
         }),
-      logout: () => set({ isAuthenticated: false, user: null }),
+
+      logout: () => set({ 
+        isCustomerAuthenticated: false, 
+        customerUser: null, 
+        customerToken: null 
+      }),
+
+      staffLogout: () => set({ 
+        isStaffAuthenticated: false, 
+        staffUser: null, 
+        staffToken: null 
+      }),
     }),
     {
       name: 'simba-auth-storage',

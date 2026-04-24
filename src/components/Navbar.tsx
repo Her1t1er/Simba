@@ -1,10 +1,11 @@
 'use client';
 
 import React from 'react';
-import { ShoppingCart, Search, Menu, Sun, Moon, Languages, MapPin } from 'lucide-react';
+import { ShoppingCart, Search, Menu, Sun, Moon, Languages, MapPin, User as UserIcon, LogOut } from 'lucide-react';
 import { useCartStore } from '@/store/useCartStore';
 import { useSettingsStore, Language } from '@/store/useSettingsStore';
 import { useBranchStore } from '@/store/useBranchStore';
+import { useAuthStore } from '@/store/useAuthStore';
 import { translations } from '@/utils/translations';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -13,17 +14,20 @@ interface NavbarProps {
   onSearchChange: (query: string) => void;
   onCartToggle: () => void;
   onMenuToggle: () => void;
+  onLogoClick?: () => void;
 }
 
-const Navbar: React.FC<NavbarProps> = ({ onSearchChange, onCartToggle, onMenuToggle }) => {
+const Navbar: React.FC<NavbarProps> = ({ onSearchChange, onCartToggle, onMenuToggle, onLogoClick }) => {
   const router = useRouter();
   const totalItems = useCartStore((state) => state.totalItems());
   const { selectedBranch, clearBranch } = useBranchStore();
+  const { customerUser, logout, isCustomerAuthenticated } = useAuthStore();
   const { language, setLanguage, theme, toggleTheme } = useSettingsStore();
   const t = translations[language];
 
   const handleBranchChange = () => {
     clearBranch();
+    if (onLogoClick) onLogoClick();
     router.push('/');
   };
 
@@ -45,14 +49,20 @@ const Navbar: React.FC<NavbarProps> = ({ onSearchChange, onCartToggle, onMenuTog
             >
               <Menu size={24} />
             </button>
-            <Link href="/" className="flex items-center gap-2 cursor-pointer">
-              <div className="w-8 h-8 bg-orange-600 rounded-lg flex items-center justify-center text-white font-bold text-xl">
+            <div 
+              onClick={() => {
+                if (onLogoClick) onLogoClick();
+                router.push('/');
+              }} 
+              className="flex items-center gap-2 cursor-pointer group"
+            >
+              <div className="w-8 h-8 bg-orange-600 rounded-lg flex items-center justify-center text-white font-bold text-xl group-hover:scale-110 transition-transform">
                 S
               </div>
               <span className="text-xl font-bold text-black dark:text-white hidden sm:block">
                 Simba<span className="text-orange-600">Market</span>
               </span>
-            </Link>
+            </div>
           </div>
 
           {/* Search Bar */}
@@ -70,14 +80,16 @@ const Navbar: React.FC<NavbarProps> = ({ onSearchChange, onCartToggle, onMenuTog
 
           {/* Actions */}
           <div className="flex items-center gap-1 sm:gap-2">
-            {/* Branch Selector (Desktop) */}
-            <button 
-              onClick={handleBranchChange}
-              className="hidden lg:flex items-center gap-2 px-3 py-1.5 bg-gray-50 dark:bg-gray-900 border border-card-border rounded-xl text-xs font-bold text-gray-600 dark:text-gray-400 hover:text-orange-600 hover:border-orange-500 transition-all group"
-            >
-              <MapPin size={14} className="text-orange-600" />
-              <span className="max-w-[120px] truncate">{selectedBranch}</span>
-            </button>
+            {/* Branch Selector (Desktop) - Only visible when branch is selected */}
+            {selectedBranch && (
+              <button 
+                onClick={handleBranchChange}
+                className="hidden lg:flex items-center gap-2 px-3 py-1.5 bg-gray-50 dark:bg-gray-900 border border-card-border rounded-xl text-xs font-bold text-gray-600 dark:text-gray-400 hover:text-orange-600 hover:border-orange-500 transition-all group"
+              >
+                <MapPin size={14} className="text-orange-600" />
+                <span className="max-w-[120px] truncate">{selectedBranch}</span>
+              </button>
+            )}
 
             {/* Language Selector */}
             <div className="relative group">
@@ -120,6 +132,33 @@ const Navbar: React.FC<NavbarProps> = ({ onSearchChange, onCartToggle, onMenuTog
                 </span>
               )}
             </button>
+
+            {/* User Account / Login */}
+            {isCustomerAuthenticated ? (
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 dark:bg-gray-900 border border-card-border rounded-xl">
+                <div className="w-6 h-6 bg-orange-600 rounded-full flex items-center justify-center text-white text-[10px] font-bold">
+                  {customerUser?.name.charAt(0).toUpperCase()}
+                </div>
+                <span className="text-xs font-bold text-black dark:text-white hidden sm:block max-w-[80px] truncate">
+                  {customerUser?.name}
+                </span>
+                <button 
+                  onClick={() => logout()}
+                  className="p-1 text-gray-400 hover:text-red-500 transition-colors"
+                  title="Logout"
+                >
+                  <LogOut size={14} />
+                </button>
+              </div>
+            ) : (
+              <Link 
+                href="/login"
+                className="flex items-center gap-2 px-4 py-2 bg-black dark:bg-white text-white dark:text-black rounded-xl text-xs font-bold hover:scale-105 active:scale-95 transition-all shadow-lg shadow-black/10"
+              >
+                <UserIcon size={16} />
+                <span className="hidden sm:block">Login</span>
+              </Link>
+            )}
           </div>
         </div>
         

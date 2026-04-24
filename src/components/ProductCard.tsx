@@ -45,7 +45,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, viewMode = 'grid' })
 
         <div className="flex-1 min-w-0">
           <span className="text-[10px] font-bold uppercase tracking-widest text-orange-600">
-            {t.categoryMap[product.category as keyof typeof t.categoryMap] || product.category}
+            {t.categoryMap[product.category.name as keyof typeof t.categoryMap] || product.category.name}
           </span>
           <h3 className="text-sm font-bold text-black dark:text-white truncate">
             {product.name}
@@ -101,7 +101,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, viewMode = 'grid' })
 
       <div className="flex flex-col flex-1 px-1">
         <span className="text-[10px] font-bold uppercase tracking-widest text-orange-600 mb-1">
-          {t.categoryMap[product.category as keyof typeof t.categoryMap] || product.category}
+          {t.categoryMap[product.category.name as keyof typeof t.categoryMap] || product.category.name}
         </span>
         <h3 className="text-sm font-bold text-black dark:text-white line-clamp-2 mb-2 transition-colors duration-200">
           {product.name}
