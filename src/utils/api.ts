@@ -1,4 +1,4 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8081/api';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://simba-backend-3oba.onrender.com/api';
 
 export const api = {
   async handleResponse(res: Response) {
