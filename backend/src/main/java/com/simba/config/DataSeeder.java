@@ -49,12 +49,29 @@ public class DataSeeder implements CommandLineRunner {
 
         // 2. Load Products from JSON
         if (productRepository.count() == 0) {
-            String jsonPath = "../src/data/simba_products.json";
-            File file = new File(jsonPath);
-            if (!file.exists()) {
-                System.out.println("JSON data file not found at " + jsonPath);
+            // Check multiple paths (Local vs Docker)
+            String[] possiblePaths = {
+                "src/main/resources/data/simba_products.json",
+                "../src/data/simba_products.json",
+                "src/data/simba_products.json"
+            };
+            
+            File file = null;
+            String foundPath = null;
+            for (String path : possiblePaths) {
+                File f = new File(path);
+                if (f.exists()) {
+                    file = f;
+                    foundPath = path;
+                    break;
+                }
+            }
+
+            if (file == null) {
+                System.out.println("JSON data file not found in any of the search locations.");
             } else {
-                byte[] jsonData = Files.readAllBytes(Paths.get(jsonPath));
+                System.out.println("Loading products from: " + foundPath);
+                byte[] jsonData = Files.readAllBytes(Paths.get(foundPath));
                 ObjectMapper mapper = new ObjectMapper();
                 JsonNode root = mapper.readTree(jsonData);
                 JsonNode productsNode = root.get("products");
