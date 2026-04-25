@@ -50,62 +50,71 @@ public class DataSeeder implements CommandLineRunner {
         }
 
         // 2. Load Products from JSON
-        if (productRepository.count() == 0) {
-            String[] possiblePaths = {
-                "classpath:data/simba_products.json",
-                "file:src/main/resources/data/simba_products.json",
-                "file:../src/data/simba_products.json",
-                "file:backend/src/main/resources/data/simba_products.json"
-            };
-            
-            Resource resource = null;
-            for (String path : possiblePaths) {
-                Resource r = resourceLoader.getResource(path);
-                if (r.exists()) {
-                    resource = r;
-                    break;
-                }
+        String[] possiblePaths = {
+            "classpath:data/simba_products.json",
+            "file:src/main/resources/data/simba_products.json",
+            "file:../src/data/simba_products.json",
+            "file:backend/src/main/resources/data/simba_products.json"
+        };
+        
+        Resource resource = null;
+        for (String path : possiblePaths) {
+            Resource r = resourceLoader.getResource(path);
+            if (r.exists()) {
+                resource = r;
+                break;
             }
+        }
 
-            if (resource == null) {
-                System.out.println("JSON data file not found in any of the search locations (Resources).");
-            } else {
-                System.out.println("Loading products from resource: " + resource.getDescription());
-                try (InputStream is = resource.getInputStream()) {
-                    ObjectMapper mapper = new ObjectMapper();
-                    JsonNode root = mapper.readTree(is);
-                    JsonNode productsNode = root.get("products");
+        if (resource == null) {
+            System.out.println("JSON data file not found in any of the search locations (Resources).");
+        } else {
+            System.out.println("Checking products from resource: " + resource.getDescription());
+            try (InputStream is = resource.getInputStream()) {
+                ObjectMapper mapper = new ObjectMapper();
+                JsonNode root = mapper.readTree(is);
+                JsonNode productsNode = root.get("products");
 
-                    for (JsonNode node : productsNode) {
-                        String categoryName = node.get("category").asText();
-                        Category category = categoryRepository.findByName(categoryName);
-                        if (category == null) {
-                            category = categoryRepository.save(new Category(categoryName));
-                        }
-
-                        Product product = new Product();
-                        if (node.has("id")) product.setId(node.get("id").asLong());
-                        product.setName(node.get("name").asText());
-                        product.setPrice(node.get("price").asDouble());
-                        product.setUnit(node.get("unit").asText());
-                        product.setImage(node.get("image").asText());
-                        product.setInStock(node.has("inStock") ? node.get("inStock").asBoolean() : true);
-                        product.setCategory(category);
-                        productRepository.save(product);
-
-                        // Add to inventory for all branches
-                        for (Branch branch : branchRepository.findAll()) {
-                            Inventory inv = new Inventory();
-                            inv.setBranch(branch);
-                            inv.setProduct(product);
-                            inv.setInStock(true);
-                            inventoryRepository.save(inv);
-                        }
+                int addedCount = 0;
+                for (JsonNode node : productsNode) {
+                    Long id = node.get("id").asLong();
+                    
+                    // Check if product already exists
+                    if (productRepository.existsById(id)) {
+                        continue; 
                     }
-                    System.out.println("Products seeded successfully!");
-                } catch (Exception e) {
-                    System.err.println("Error reading JSON file: " + e.getMessage());
+
+                    String categoryName = node.get("category").asText();
+                    Category category = categoryRepository.findByName(categoryName);
+                    if (category == null) {
+                        category = categoryRepository.save(new Category(categoryName));
+                    }
+
+                    Product product = new Product();
+                    product.setId(id);
+                    product.setName(node.get("name").asText());
+                    product.setPrice(node.get("price").asDouble());
+                    product.setUnit(node.get("unit").asText());
+                    product.setImage(node.get("image").asText());
+                    product.setInStock(node.has("inStock") ? node.get("inStock").asBoolean() : true);
+                    product.setCategory(category);
+                    productRepository.save(product);
+
+                    // Add to inventory for all branches
+                    for (Branch branch : branchRepository.findAll()) {
+                        Inventory inv = new Inventory();
+                        inv.setBranch(branch);
+                        inv.setProduct(product);
+                        inv.setInStock(true);
+                        inventoryRepository.save(inv);
+                    }
+                    addedCount++;
                 }
+                if (addedCount > 0) {
+                    System.out.println("Successfully added " + addedCount + " new products to the database!");
+                }
+            } catch (Exception e) {
+                System.err.println("Error reading JSON file: " + e.getMessage());
             }
         }
 
