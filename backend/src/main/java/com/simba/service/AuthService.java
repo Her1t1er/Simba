@@ -15,127 +15,115 @@ import org.springframework.stereotype.Service;
 
 import java.util.Collections;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 public class AuthService {
     private final UserRepository userRepository;
+    private final EmailService emailService;
     
-    @Value("${google.client.id:}")
+    @Value("${spring.security.oauth2.client.registration.google.client-id:}")
     private String googleClientId;
 
-    public AuthService(UserRepository userRepository) {
+    public AuthService(UserRepository userRepository, EmailService emailService) {
         this.userRepository = userRepository;
+        this.emailService = emailService;
     }
 
     public LoginResponseDTO signup(SignupRequestDTO request) {
+        if (request == null || request.getEmail() == null) {
+            throw new RuntimeException("Invalid signup request");
+        }
+        
         if (userRepository.findByEmail(request.getEmail()).isPresent()) {
             throw new RuntimeException("Email already in use");
         }
 
+        String token = UUID.randomUUID().toString();
         User user = new User();
         user.setName(request.getName());
         user.setEmail(request.getEmail());
         user.setPassword("{noop}" + request.getPassword());
         user.setRole("customer");
+        user.setEnabled(false);
+        user.setVerificationToken(token);
         user = userRepository.save(user);
 
+        // Send confirmation email
+        emailService.sendRegistrationConfirmation(user.getEmail(), user.getName(), token, request.getRedirect());
+
         return new LoginResponseDTO(
-            "demo-jwt-token",
+            null,
             user.getName(),
             user.getEmail(),
-            user.getRole(),
+            user.getRole().toLowerCase(),
             null
         );
     }
 
+    public void verifyEmail(String token) {
+        User user = userRepository.findByVerificationToken(token)
+                .orElseThrow(() -> new RuntimeException("Invalid verification token"));
+        
+        user.setEnabled(true);
+        user.setVerificationToken(null);
+        userRepository.save(user);
+    }
+
+    public void forgotPassword(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("No account found with this email."));
+        
+        String token = UUID.randomUUID().toString();
+        user.setResetToken(token);
+        user.setResetTokenExpiry(java.time.LocalDateTime.now().plusHours(1));
+        userRepository.save(user);
+        
+        emailService.sendPasswordResetEmail(user.getEmail(), user.getName(), token);
+    }
+
+    public void resetPassword(String token, String newPassword) {
+        User user = userRepository.findByResetToken(token)
+                .orElseThrow(() -> new RuntimeException("Invalid or expired reset token."));
+        
+        if (user.getResetTokenExpiry().isBefore(java.time.LocalDateTime.now())) {
+            throw new RuntimeException("Reset token has expired.");
+        }
+        
+        user.setPassword("{noop}" + newPassword);
+        user.setResetToken(null);
+        user.setResetTokenExpiry(null);
+        userRepository.save(user);
+    }
+
     public LoginResponseDTO login(LoginRequestDTO request) {
+        if (request == null || request.getEmail() == null || request.getPassword() == null) {
+            throw new RuntimeException("Invalid credentials");
+        }
+
         Optional<User> userOpt = userRepository.findByEmail(request.getEmail());
         
         if (userOpt.isPresent()) {
             User user = userOpt.get();
+            
+            if (!user.isEnabled()) {
+                throw new RuntimeException("Please verify your email before logging in.");
+            }
+
             String storedPassword = user.getPassword();
             String inputPassword = request.getPassword();
             
-            if (storedPassword.equals(inputPassword) || storedPassword.equals("{noop}" + inputPassword)) {
+            if (storedPassword != null && (storedPassword.equals(inputPassword) || storedPassword.equals("{noop}" + inputPassword))) {
                 return new LoginResponseDTO(
                     "demo-jwt-token",
                     user.getName(),
                     user.getEmail(),
-                    user.getRole().toLowerCase(),
+                    user.getRole() != null ? user.getRole().toLowerCase() : "customer",
                     user.getManagedBranch() != null ? user.getManagedBranch().getName() : null
                 );
             }
         }
         
         throw new RuntimeException("Invalid credentials");
-    }
-
-    public LoginResponseDTO googleLogin(GoogleAuthRequestDTO request) {
-        try {
-            GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(new NetHttpTransport(), new GsonFactory())
-                .setAudience(Collections.singletonList(googleClientId))
-                .build();
-
-            GoogleIdToken idToken = verifier.verify(request.getToken());
-            if (idToken == null) {
-                // If verification fails but we want to allow it for testing without a valid client ID
-                if (googleClientId == null || googleClientId.isEmpty()) {
-                    return fallbackGoogleLogin(request.getToken());
-                }
-                throw new RuntimeException("Invalid Google token");
-            }
-
-            GoogleIdToken.Payload payload = idToken.getPayload();
-            String email = payload.getEmail();
-            String name = (String) payload.get("name");
-            if (name == null) name = email.split("@")[0];
-
-            return processGoogleUser(email, name);
-
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to process Google authentication: " + e.getMessage());
-        }
-    }
-
-    private LoginResponseDTO fallbackGoogleLogin(String token) {
-        // Fallback logic for when Client ID is not configured (for dev)
-        try {
-            // This is what we had before, keep it only as an emergency fallback
-            String[] chunks = token.split("\\.");
-            if (chunks.length < 2) throw new RuntimeException("Invalid token");
-            java.util.Base64.Decoder decoder = java.util.Base64.getUrlDecoder();
-            String payloadStr = new String(decoder.decode(chunks[1]));
-            com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
-            com.fasterxml.jackson.databind.JsonNode node = mapper.readTree(payloadStr);
-            
-            String email = node.get("email").asText();
-            String name = node.has("name") ? node.get("name").asText() : email.split("@")[0];
-            return processGoogleUser(email, name);
-        } catch (Exception e) {
-            throw new RuntimeException("Fallback Google Auth failed: " + e.getMessage());
-        }
-    }
-
-    private LoginResponseDTO processGoogleUser(String email, String name) {
-        Optional<User> userOpt = userRepository.findByEmail(email);
-        User user;
-        if (userOpt.isPresent()) {
-            user = userOpt.get();
-        } else {
-            user = new User();
-            user.setEmail(email);
-            user.setName(name);
-            user.setPassword("{noop}google-oauth-placeholder");
-            user.setRole("customer");
-            user = userRepository.save(user);
-        }
-
-        return new LoginResponseDTO(
-            "demo-google-jwt-token",
-            user.getName(),
-            user.getEmail(),
-            user.getRole().toLowerCase(),
-            user.getManagedBranch() != null ? user.getManagedBranch().getName() : null
-        );
     }
 }

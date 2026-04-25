@@ -27,7 +27,9 @@ export default function DashboardOverview() {
       if (staffUser?.managedBranch) {
         try {
           const data = await api.getBranchOrders(staffUser.managedBranch);
-          setBranchOrders(data);
+          // Sort by ID descending (newest first)
+          const sortedData = data.sort((a: any, b: any) => b.id - a.id);
+          setBranchOrders(sortedData);
         } catch (error) {
           console.error("Failed to fetch branch orders:", error);
         } finally {

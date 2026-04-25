@@ -22,11 +22,19 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/products/**").permitAll()
                 .requestMatchers("/api/orders/checkout").permitAll()
-                .requestMatchers("/api/auth/login").permitAll()
-                .requestMatchers("/api/orders/branch/**").permitAll()
+                .requestMatchers("/api/auth/**").permitAll()
+                .requestMatchers("/api/orders/**").permitAll()
                 .requestMatchers("/api/inventory/**").permitAll()
+                // GOOGLE AUTH START
+                .requestMatchers("/login/oauth2/**", "/oauth2/**").permitAll()
+                // GOOGLE AUTH END
                 .anyRequest().permitAll() // Permit all for now to debug
+            )
+            // GOOGLE AUTH START
+            .oauth2Login(oauth2 -> oauth2
+                .loginPage("/login")
             );
+            // GOOGLE AUTH END
         
         return http.build();
     }

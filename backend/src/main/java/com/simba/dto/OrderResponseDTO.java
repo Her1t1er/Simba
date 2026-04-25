@@ -9,6 +9,7 @@ public class OrderResponseDTO {
     private String customerPhone;
     private String orderStatus;
     private String prepaymentStatus;
+    private String declineReason;
     private Double total;
     private Double prepaymentAmount;
     private Double balanceDue;
@@ -28,6 +29,8 @@ public class OrderResponseDTO {
     public void setOrderStatus(String orderStatus) { this.orderStatus = orderStatus; }
     public String getPrepaymentStatus() { return prepaymentStatus; }
     public void setPrepaymentStatus(String prepaymentStatus) { this.prepaymentStatus = prepaymentStatus; }
+    public String getDeclineReason() { return declineReason; }
+    public void setDeclineReason(String declineReason) { this.declineReason = declineReason; }
     public Double getTotal() { return total; }
     public void setTotal(Double total) { this.total = total; }
     public Double getPrepaymentAmount() { return prepaymentAmount; }

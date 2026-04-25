@@ -21,14 +21,27 @@ public class OrderController {
         return orderService.createOrder(request);
     }
 
+    @GetMapping
+    public List<OrderResponseDTO> getAllOrders() {
+        return orderService.getAllOrders();
+    }
+
     @GetMapping("/branch/{branchName}")
     public List<OrderResponseDTO> getBranchOrders(@PathVariable String branchName) {
         return orderService.getOrdersByBranch(branchName);
     }
 
+    @GetMapping("/customer")
+    public List<OrderResponseDTO> getCustomerOrders(@RequestParam String email) {
+        return orderService.getOrdersByCustomer(email);
+    }
+
     @PatchMapping("/{id}/prepayment")
-    public OrderResponseDTO updatePrepayment(@PathVariable Long id, @RequestParam String status) {
-        return orderService.updatePrepaymentStatus(id, status);
+    public OrderResponseDTO updatePrepayment(
+            @PathVariable Long id, 
+            @RequestParam String status,
+            @RequestParam(required = false) String declineReason) {
+        return orderService.updatePrepaymentStatus(id, status, declineReason);
     }
 
     @PatchMapping("/{id}/status")

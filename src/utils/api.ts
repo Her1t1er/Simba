@@ -5,7 +5,13 @@ export const api = {
     if (!res.ok) {
       let errorDetail = "";
       try {
-        errorDetail = await res.text();
+        const text = await res.text();
+        try {
+          const json = JSON.parse(text);
+          errorDetail = json.message || json.error || text;
+        } catch (e) {
+          errorDetail = text;
+        }
       } catch (e) {
         errorDetail = "Could not read error response body";
       }
@@ -67,6 +73,16 @@ export const api = {
     return this.handleResponse(res);
   },
 
+  async getOrders() {
+    const res = await fetch(`${API_BASE_URL}/orders`);
+    return this.handleResponse(res);
+  },
+
+  async getCustomerOrders(email: string) {
+    const res = await fetch(`${API_BASE_URL}/orders/customer?email=${encodeURIComponent(email)}`);
+    return this.handleResponse(res);
+  },
+
   // Auth
   async signup(data: any) {
     const res = await fetch(`${API_BASE_URL}/auth/signup`, {
@@ -86,6 +102,30 @@ export const api = {
     return this.handleResponse(res);
   },
 
+  async verifyEmail(token: string) {
+    const res = await fetch(`${API_BASE_URL}/auth/verify?token=${encodeURIComponent(token)}`);
+    if (!res.ok) {
+        return this.handleResponse(res);
+    }
+    return res.text();
+  },
+
+  async forgotPassword(email: string) {
+    const res = await fetch(`${API_BASE_URL}/auth/forgot-password?email=${encodeURIComponent(email)}`, {
+      method: 'POST'
+    });
+    if (!res.ok) return this.handleResponse(res);
+    return res.text();
+  },
+
+  async resetPassword(token: string, newPassword: string) {
+    const res = await fetch(`${API_BASE_URL}/auth/reset-password?token=${encodeURIComponent(token)}&newPassword=${encodeURIComponent(newPassword)}`, {
+      method: 'POST'
+    });
+    if (!res.ok) return this.handleResponse(res);
+    return res.text();
+  },
+
   async googleAuth(tokenId: string) {
     const res = await fetch(`${API_BASE_URL}/auth/google`, {
       method: 'POST',
@@ -101,8 +141,12 @@ export const api = {
     return this.handleResponse(res);
   },
 
-  async updatePrepayment(id: number, status: string) {
-    const res = await fetch(`${API_BASE_URL}/orders/${id}/prepayment?status=${status}`, {
+  async updatePrepayment(id: number, status: string, declineReason?: string) {
+    let url = `${API_BASE_URL}/orders/${id}/prepayment?status=${status}`;
+    if (declineReason) {
+      url += `&declineReason=${encodeURIComponent(declineReason)}`;
+    }
+    const res = await fetch(url, {
       method: 'PATCH',
     });
     return this.handleResponse(res);

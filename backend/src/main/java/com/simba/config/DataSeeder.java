@@ -11,6 +11,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 @Configuration
 public class DataSeeder implements CommandLineRunner {
@@ -33,68 +34,87 @@ public class DataSeeder implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
-        if (branchRepository.count() > 0) return;
-
         // 1. Seed Branches
-        List<String> branchNames = Arrays.asList(
-            "Simba Centenary", "Simba Gishushu", "Simba Kimironko", "Simba Kicukiro",
-            "Simba Kigali Height", "Simba UTC", "Simba Gacuriro", "Simba Gikondo",
-            "Simba sonatube", "Simba Kisimenti", "Simba Rebero", "Simba Nyamirambo", "Simba Musanze"
-        );
-        for (String name : branchNames) {
-            branchRepository.save(new Branch(name));
+        if (branchRepository.count() == 0) {
+            List<String> branchNames = Arrays.asList(
+                "Simba Centenary", "Simba Gishushu", "Simba Kimironko", "Simba Kicukiro",
+                "Simba Kigali Height", "Simba UTC", "Simba Gacuriro", "Simba Gikondo",
+                "Simba sonatube", "Simba Kisimenti", "Simba Rebero", "Simba Nyamirambo", "Simba Musanze"
+            );
+            for (String name : branchNames) {
+                branchRepository.save(new Branch(name));
+            }
+            System.out.println("Branches seeded successfully!");
         }
 
         // 2. Load Products from JSON
-        String jsonPath = "../src/data/simba_products.json";
-        File file = new File(jsonPath);
-        if (!file.exists()) {
-            System.out.println("JSON data file not found at " + jsonPath);
-            return;
+        if (productRepository.count() == 0) {
+            String jsonPath = "../src/data/simba_products.json";
+            File file = new File(jsonPath);
+            if (!file.exists()) {
+                System.out.println("JSON data file not found at " + jsonPath);
+            } else {
+                byte[] jsonData = Files.readAllBytes(Paths.get(jsonPath));
+                ObjectMapper mapper = new ObjectMapper();
+                JsonNode root = mapper.readTree(jsonData);
+                JsonNode productsNode = root.get("products");
+
+                for (JsonNode node : productsNode) {
+                    String categoryName = node.get("category").asText();
+                    Category category = categoryRepository.findByName(categoryName);
+                    if (category == null) {
+                        category = categoryRepository.save(new Category(categoryName));
+                    }
+
+                    Product product = new Product();
+                    if (node.has("id")) product.setId(node.get("id").asLong());
+                    product.setName(node.get("name").asText());
+                    product.setPrice(node.get("price").asDouble());
+                    product.setUnit(node.get("unit").asText());
+                    product.setImage(node.get("image").asText());
+                    product.setInStock(node.has("inStock") ? node.get("inStock").asBoolean() : true);
+                    product.setCategory(category);
+                    productRepository.save(product);
+
+                    // Add to inventory for all branches
+                    for (Branch branch : branchRepository.findAll()) {
+                        Inventory inv = new Inventory();
+                        inv.setBranch(branch);
+                        inv.setProduct(product);
+                        inv.setInStock(true);
+                        inventoryRepository.save(inv);
+                    }
+                }
+                System.out.println("Products seeded successfully!");
+            }
         }
 
-        byte[] jsonData = Files.readAllBytes(Paths.get(jsonPath));
-        ObjectMapper mapper = new ObjectMapper();
-        JsonNode root = mapper.readTree(jsonData);
-        JsonNode productsNode = root.get("products");
-
-        for (JsonNode node : productsNode) {
-            String categoryName = node.get("category").asText();
-            Category category = categoryRepository.findByName(categoryName);
-            if (category == null) {
-                category = categoryRepository.save(new Category(categoryName));
+        // 3. Create or Update Demo Manager
+        Optional<User> managerOpt = userRepository.findByEmail("manager@simba.rw");
+        if (managerOpt.isEmpty()) {
+            List<Branch> branches = branchRepository.findAll();
+            if (!branches.isEmpty()) {
+                Branch firstBranch = branches.get(0);
+                User manager = new User();
+                manager.setName("Demo Manager");
+                manager.setEmail("manager@simba.rw");
+                manager.setPassword("{noop}password123");
+                manager.setRole("MANAGER");
+                manager.setProvider("LOCAL");
+                manager.setEnabled(true);
+                manager.setManagedBranch(firstBranch);
+                userRepository.save(manager);
+                System.out.println("Demo manager created!");
             }
-
-            Product product = new Product();
-            product.setId(node.get("id").asLong());
-            product.setName(node.get("name").asText());
-            product.setPrice(node.get("price").asDouble());
-            product.setUnit(node.get("unit").asText());
-            product.setImage(node.get("image").asText());
-            product.setInStock(node.has("inStock") ? node.get("inStock").asBoolean() : true);
-            product.setCategory(category);
-            productRepository.save(product);
-
-            // Add to inventory for all branches
-            for (Branch branch : branchRepository.findAll()) {
-                Inventory inv = new Inventory();
-                inv.setBranch(branch);
-                inv.setProduct(product);
-                inv.setInStock(true);
-                inventoryRepository.save(inv);
+        } else {
+            User manager = managerOpt.get();
+            if (!manager.isEnabled()) {
+                manager.setEnabled(true);
+                userRepository.save(manager);
+                System.out.println("Existing demo manager enabled!");
             }
         }
 
-        // 3. Create a Demo Manager
-        Branch firstBranch = branchRepository.findAll().get(0);
-        User manager = new User();
-        manager.setName("Demo Manager");
-        manager.setEmail("manager@simba.rw");
-        manager.setPassword("{noop}password123");
-        manager.setRole("MANAGER");
-        manager.setManagedBranch(firstBranch);
-        userRepository.save(manager);
-
-        System.out.println("Database seeded successfully!");
+        System.out.println("Data seeding process completed!");
     }
 }

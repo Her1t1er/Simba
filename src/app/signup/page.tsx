@@ -14,6 +14,7 @@ function SignupForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
   const { signup } = useAuthStore();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -22,19 +23,10 @@ function SignupForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-<<<<<<< HEAD
 
-=======
-    
->>>>>>> 6bfee17 (feat: implement product/category CRUD, user signup, and real API integration)
     try {
-      const response = await api.signup({ name, email, password });
-      signup({
-        name: response.name,
-        email: response.email,
-        role: response.role
-      }, response.token);
-      router.push(redirect);
+      await api.signup({ name, email, password, redirect });
+      setIsSuccess(true);
     } catch (error: any) {
       console.error("Signup failed:", error);
       alert(error.message || "Failed to create account.");
@@ -60,6 +52,29 @@ function SignupForm() {
       setIsLoading(false);
     }
   };
+
+  if (isSuccess) {
+    return (
+      <div className="max-w-md w-full bg-white dark:bg-gray-900 rounded-3xl p-8 border border-card-border shadow-xl text-center">
+        <div className="mb-6 flex justify-center">
+          <div className="w-20 h-20 bg-orange-100 dark:bg-orange-900/30 rounded-full flex items-center justify-center">
+            <Mail className="w-10 h-10 text-orange-600" />
+          </div>
+        </div>
+        <h1 className="text-3xl font-black text-black dark:text-white mb-4">Check your email</h1>
+        <p className="text-gray-500 dark:text-gray-400 mb-8">
+          We've sent a verification link to <span className="font-bold text-black dark:text-white">{email}</span>. 
+          Please verify your email to complete your registration and continue to checkout.
+        </p>
+        <Link 
+          href="/login" 
+          className="inline-block w-full bg-orange-600 text-white py-4 rounded-2xl font-bold hover:bg-orange-700 transition-all shadow-lg shadow-orange-600/20"
+        >
+          Go to Login
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-md w-full bg-white dark:bg-gray-900 rounded-3xl p-8 border border-card-border shadow-xl">

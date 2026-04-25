@@ -43,11 +43,11 @@ const initialOrders: Order[] = [
     branch: 'Simba Kimironko',
     items: [
       {
-        product: { id: 1, name: 'Lentz Radiant Heater', price: 83600, category: 'Kitchenware & Electronics', image: '', unit: '1 unit', subcategoryId: 1, inStock: true },
+        product: { id: 1, name: 'Lentz Radiant Heater', price: 83600, category: { id: 4, name: 'Kitchenware & Electronics' }, image: '', unit: '1 unit', subcategoryId: 1, inStock: true },
         quantity: 1
       },
       {
-        product: { id: 2, name: 'Tropical heat Salad Seasoning', price: 900, category: 'Food Products', image: '', unit: '50g', subcategoryId: 1, inStock: true },
+        product: { id: 2, name: 'Tropical heat Salad Seasoning', price: 900, category: { id: 3, name: 'Food Products' }, image: '', unit: '50g', subcategoryId: 1, inStock: true },
         quantity: 2
       }
     ],
@@ -66,7 +66,7 @@ const initialOrders: Order[] = [
     branch: 'Simba Gishushu',
     items: [
       {
-        product: { id: 3, name: 'Herman Black Pepper', price: 5100, category: 'Food Products', image: '', unit: '100g', subcategoryId: 1, inStock: true },
+        product: { id: 3, name: 'Herman Black Pepper', price: 5100, category: { id: 3, name: 'Food Products' }, image: '', unit: '100g', subcategoryId: 1, inStock: true },
         quantity: 1
       }
     ],
@@ -85,7 +85,7 @@ const initialOrders: Order[] = [
     branch: 'Simba Kimironko',
     items: [
       {
-        product: { id: 4, name: 'Inyange Milk', price: 1000, category: 'Food Products', image: '', unit: '500ml', subcategoryId: 1, inStock: true },
+        product: { id: 4, name: 'Inyange Milk', price: 1000, category: { id: 3, name: 'Food Products' }, image: '', unit: '500ml', subcategoryId: 1, inStock: true },
         quantity: 5
       }
     ],

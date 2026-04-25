@@ -19,7 +19,7 @@ import {
   Square,
   BadgeAlert,
   Wallet,
-  ArrowRight
+  XCircle
 } from 'lucide-react';
 
 export default function StaffOrdersPage() {
@@ -30,12 +30,16 @@ export default function StaffOrdersPage() {
   const t = translations[language];
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
+  const [isDeclining, setIsDeclining] = useState(false);
+  const [declineReason, setDeclineReason] = useState('');
 
   const fetchOrders = async () => {
     if (staffUser?.managedBranch) {
       try {
         const data = await api.getBranchOrders(staffUser.managedBranch);
-        setOrders(data);
+        // Sort by ID descending (newest first)
+        const sortedData = data.sort((a: any, b: any) => b.id - a.id);
+        setOrders(sortedData);
       } catch (error) {
         console.error("Failed to fetch branch orders:", error);
       } finally {
@@ -59,10 +63,12 @@ export default function StaffOrdersPage() {
     );
   }, [orders, searchQuery]);
 
-  const handleUpdatePrepayment = async (id: number, status: string) => {
+  const handleUpdatePrepayment = async (id: number, status: string, reason?: string) => {
     try {
-      await api.updatePrepayment(id, status);
+      await api.updatePrepayment(id, status, reason);
       fetchOrders();
+      setIsDeclining(false);
+      setDeclineReason('');
     } catch (error) {
       alert("Failed to update prepayment");
     }
@@ -86,6 +92,8 @@ export default function StaffOrdersPage() {
       case 'verified': return 'text-green-600 bg-green-50 dark:bg-green-900/20';
       case 'ready_for_pickup': return 'text-blue-600 bg-blue-50 dark:bg-blue-900/20';
       case 'processing': return 'text-orange-600 bg-orange-50 dark:bg-orange-900/20';
+      case 'declined': return 'text-red-600 bg-red-50 dark:bg-red-900/20';
+      case 'cancelled': return 'text-red-600 bg-red-50 dark:bg-red-900/20';
       default: return 'text-gray-500 bg-gray-50 dark:bg-gray-800';
     }
   };
@@ -175,7 +183,11 @@ export default function StaffOrdersPage() {
                     <div className="flex justify-between items-start mb-2">
                       <p className="font-black text-black dark:text-white">#{order.id}</p>
                       <span className={`text-[10px] px-2 py-1 rounded-md font-bold uppercase ${getStatusColor(order.prepaymentStatus)}`}>
-                        {order.prepaymentStatus === 'VERIFIED' ? t.staff.paymentVerified : t.staff.paymentPending}
+                        {order.prepaymentStatus === 'VERIFIED' 
+                          ? t.staff.paymentVerified 
+                          : order.prepaymentStatus === 'DECLINED'
+                          ? t.staff.paymentDeclined
+                          : t.staff.paymentPending}
                       </span>
                     </div>
                     <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mb-4">
@@ -235,31 +247,92 @@ export default function StaffOrdersPage() {
                     <div className="w-2 h-2 bg-orange-600 rounded-full" />
                     {t.staff.step1}
                   </h3>
-                  <div className={`flex items-center justify-between p-6 rounded-2xl border-2 transition-all ${
+                  <div className={`flex flex-col p-6 rounded-2xl border-2 transition-all ${
                     selectedOrder.prepaymentStatus === 'VERIFIED' 
                       ? 'border-green-500 bg-green-50/50 dark:bg-green-900/10' 
+                      : selectedOrder.prepaymentStatus === 'DECLINED'
+                      ? 'border-red-500 bg-red-50/50 dark:bg-red-900/10'
                       : 'border-orange-500 bg-orange-50/50 dark:bg-orange-900/10 animate-pulse'
                   }`}>
-                    <div className="flex items-center gap-4">
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                        selectedOrder.prepaymentStatus === 'VERIFIED' ? 'bg-green-500 text-white' : 'bg-orange-500 text-white'
-                      }`}>
-                        <Wallet size={20} />
+                    <div className="flex flex-wrap items-center justify-between gap-4">
+                      <div className="flex items-center gap-4">
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                          selectedOrder.prepaymentStatus === 'VERIFIED' 
+                            ? 'bg-green-500 text-white' 
+                            : selectedOrder.prepaymentStatus === 'DECLINED'
+                            ? 'bg-red-500 text-white'
+                            : 'bg-orange-500 text-white'
+                        }`}>
+                          {selectedOrder.prepaymentStatus === 'DECLINED' ? <XCircle size={20} /> : <Wallet size={20} />}
+                        </div>
+                        <div>
+                          <p className="font-bold text-black dark:text-white">
+                            {selectedOrder.prepaymentStatus === 'VERIFIED' 
+                              ? t.staff.paymentVerified 
+                              : selectedOrder.prepaymentStatus === 'DECLINED'
+                              ? t.staff.paymentDeclined
+                              : t.staff.paymentPending}
+                          </p>
+                          <p className="text-xs text-gray-500">{t.staff.customer} paid {formatPrice(selectedOrder.prepaymentAmount)}</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="font-bold text-black dark:text-white">
-                          {selectedOrder.prepaymentStatus === 'VERIFIED' ? t.staff.paymentVerified : t.staff.paymentPending}
-                        </p>
-                        <p className="text-xs text-gray-500">{t.staff.customer} paid {formatPrice(selectedOrder.prepaymentAmount)}</p>
-                      </div>
+                      
+                      {selectedOrder.prepaymentStatus !== 'VERIFIED' && selectedOrder.prepaymentStatus !== 'DECLINED' && !isDeclining && (
+                        <div className="flex gap-2">
+                          <button 
+                            onClick={() => setIsDeclining(true)}
+                            className="px-4 py-2 bg-white dark:bg-gray-800 text-red-500 border border-card-border text-xs font-bold rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-all"
+                          >
+                            {t.staff.declinePayment}
+                          </button>
+                          <button 
+                            onClick={() => handleUpdatePrepayment(selectedOrder.id, 'VERIFIED')}
+                            className="px-4 py-2 bg-orange-600 text-white text-xs font-bold rounded-lg hover:bg-orange-700 transition-all"
+                          >
+                            {t.staff.confirmPayment}
+                          </button>
+                        </div>
+                      )}
                     </div>
-                    {selectedOrder.prepaymentStatus !== 'VERIFIED' && (
-                      <button 
-                        onClick={() => handleUpdatePrepayment(selectedOrder.id, 'verified')}
-                        className="px-4 py-2 bg-orange-600 text-white text-xs font-bold rounded-lg hover:bg-orange-700 transition-all"
-                      >
-                        {t.staff.confirmPayment}
-                      </button>
+
+                    {isDeclining && (
+                      <div className="mt-4 pt-4 border-t border-orange-500/20 animate-in fade-in slide-in-from-top-2">
+                        <label className="block text-xs font-bold text-black dark:text-white mb-2">
+                          {t.staff.declineReasonLabel}
+                        </label>
+                        <textarea
+                          value={declineReason}
+                          onChange={(e) => setDeclineReason(e.target.value)}
+                          placeholder={t.staff.declineReasonPlaceholder}
+                          rows={2}
+                          className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-card-border rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 text-sm dark:text-white mb-3"
+                        />
+                        <div className="flex gap-2 justify-end">
+                          <button 
+                            onClick={() => {
+                              setIsDeclining(false);
+                              setDeclineReason('');
+                            }}
+                            className="px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 text-xs font-bold rounded-lg hover:bg-gray-200 transition-all"
+                          >
+                            {t.staff.cancel}
+                          </button>
+                          <button 
+                            disabled={!declineReason.trim()}
+                            onClick={() => handleUpdatePrepayment(selectedOrder.id, 'DECLINED', declineReason)}
+                            className="px-4 py-2 bg-red-600 text-white text-xs font-bold rounded-lg hover:bg-red-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            {t.staff.declinePayment}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {selectedOrder.prepaymentStatus === 'DECLINED' && selectedOrder.declineReason && (
+                      <div className="mt-4 pt-4 border-t border-red-500/20 text-sm">
+                        <span className="font-bold text-red-600">{t.staff.declineReasonLabel}:</span>
+                        <p className="text-gray-700 dark:text-gray-300 mt-1">{selectedOrder.declineReason}</p>
+                      </div>
                     )}
                   </div>
                 </section>

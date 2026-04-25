@@ -1,11 +1,12 @@
 'use client';
 
-import React from 'react';
-import { ShoppingCart, Search, Menu, Sun, Moon, Languages, MapPin, User as UserIcon, LogOut } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ShoppingCart, Search, Menu, Sun, Moon, Languages, MapPin, User as UserIcon, LogOut, Bell, Package, CheckCircle, XCircle } from 'lucide-react';
 import { useCartStore } from '@/store/useCartStore';
 import { useSettingsStore, Language } from '@/store/useSettingsStore';
 import { useBranchStore } from '@/store/useBranchStore';
 import { useAuthStore } from '@/store/useAuthStore';
+import { api } from '@/utils/api';
 import { translations } from '@/utils/translations';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -24,6 +25,35 @@ const Navbar: React.FC<NavbarProps> = ({ onSearchChange, onCartToggle, onMenuTog
   const { customerUser, logout, isCustomerAuthenticated } = useAuthStore();
   const { language, setLanguage, theme, toggleTheme } = useSettingsStore();
   const t = translations[language];
+
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [showNotifications, setShowNotifications] = useState(false);
+
+  useEffect(() => {
+    if (isCustomerAuthenticated && customerUser?.email) {
+      const fetchCustomerOrders = async () => {
+        try {
+          const customerOrders = await api.getCustomerOrders(customerUser.email);
+          // Sort by date
+          const sortedOrders = customerOrders
+            .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+          
+          // Only show interesting status updates (Verified or Declined) from last 24h
+          const relevantOrders = sortedOrders.filter((o: any) => 
+            o.prepaymentStatus === 'VERIFIED' || o.prepaymentStatus === 'DECLINED'
+          ).slice(0, 5); // Keep last 5
+
+          setNotifications(relevantOrders);
+        } catch (error) {
+          console.error("Failed to fetch notifications:", error);
+        }
+      };
+
+      fetchCustomerOrders();
+      const interval = setInterval(fetchCustomerOrders, 30000); // Polling every 30s
+      return () => clearInterval(interval);
+    }
+  }, [isCustomerAuthenticated, customerUser?.email]);
 
   const handleBranchChange = () => {
     clearBranch();
@@ -120,6 +150,76 @@ const Navbar: React.FC<NavbarProps> = ({ onSearchChange, onCartToggle, onMenuTog
               {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
             </button>
 
+            {/* Notifications */}
+            {isCustomerAuthenticated && (
+              <div className="relative">
+                <button
+                  onClick={() => setShowNotifications(!showNotifications)}
+                  className="p-2 text-black dark:text-gray-400 text-gray-600 hover:text-orange-600 transition-colors relative"
+                >
+                  <Bell size={20} />
+                  {notifications.length > 0 && (
+                    <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-orange-600 rounded-full border border-white dark:border-gray-950" />
+                  )}
+                </button>
+
+                {showNotifications && (
+                  <>
+                    <div 
+                      className="fixed inset-0 z-40" 
+                      onClick={() => setShowNotifications(false)} 
+                    />
+                    <div className="absolute right-0 top-full mt-2 w-80 bg-white dark:bg-gray-900 border border-card-border rounded-2xl shadow-2xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                      <div className="p-4 border-b border-card-border flex justify-between items-center bg-gray-50 dark:bg-gray-800/50">
+                        <h3 className="text-sm font-black text-black dark:text-white uppercase tracking-wider">{t.notifications}</h3>
+                        {notifications.length > 0 && (
+                          <span className="text-[10px] bg-orange-600 text-white px-2 py-0.5 rounded-full font-bold">
+                            {notifications.length}
+                          </span>
+                        )}
+                      </div>
+                      <div className="max-h-96 overflow-y-auto">
+                        {notifications.length === 0 ? (
+                          <div className="p-8 text-center">
+                            <Bell size={32} className="mx-auto text-gray-300 mb-2" />
+                            <p className="text-sm text-gray-500">{t.noNotifications}</p>
+                          </div>
+                        ) : (
+                          <div className="divide-y divide-card-border">
+                            {notifications.map((n) => (
+                              <div key={n.id} className="p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors cursor-default">
+                                <div className="flex gap-3">
+                                  <div className={`mt-0.5 w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+                                    n.prepaymentStatus === 'VERIFIED' ? 'bg-green-100 text-green-600 dark:bg-green-900/30' : 'bg-red-100 text-red-600 dark:bg-red-900/30'
+                                  }`}>
+                                    {n.prepaymentStatus === 'VERIFIED' ? <CheckCircle size={16} /> : <XCircle size={16} />}
+                                  </div>
+                                  <div>
+                                    <p className="text-xs font-black text-black dark:text-white mb-0.5">
+                                      {t.orderStatusUpdate}
+                                    </p>
+                                    <p className="text-[11px] text-gray-600 dark:text-gray-400 leading-relaxed">
+                                      {n.prepaymentStatus === 'VERIFIED' 
+                                        ? t.orderVerifiedDesc.replace('{id}', n.id.toString())
+                                        : t.orderDeclinedDesc.replace('{id}', n.id.toString()).replace('{reason}', n.declineReason || 'N/A')
+                                      }
+                                    </p>
+                                    <p className="text-[9px] text-gray-400 mt-2 font-bold uppercase">
+                                      {new Date(n.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+
             {/* Cart Icon */}
             <button
               onClick={onCartToggle}
@@ -182,3 +282,4 @@ const Navbar: React.FC<NavbarProps> = ({ onSearchChange, onCartToggle, onMenuTog
 };
 
 export default Navbar;
+

@@ -22,6 +22,7 @@ export default function CheckoutPage() {
 
   const [isHydrated, setIsHydrated] = React.useState(false);
   const [paymentMethod, setPaymentMethod] = useState<'mtn' | 'airtel' | 'card'>('mtn');
+  const [phoneNumber, setPhoneNumber] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [pickupNotes, setPickupNotes] = useState('');
@@ -42,8 +43,9 @@ export default function CheckoutPage() {
 
   if (!isHydrated || !selectedBranch || !customerUser) return null;
 
-  const prepayment = totalPrice() * 0.1;
-  const balanceDue = totalPrice() * 0.9;
+  const total = totalPrice();
+  const prepayment = total * 0.1;
+  const balanceDue = total * 0.9;
 
   const handlePlaceOrder = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,7 +55,7 @@ export default function CheckoutPage() {
     const orderData = {
       customerName: customerUser.name,
       customerEmail: customerUser.email,
-      customerPhone: '0780000000',
+      customerPhone: phoneNumber,
       pickupNotes: pickupNotes,
       branchName: selectedBranch,
       items: items.map(item => ({ 
@@ -68,9 +70,9 @@ export default function CheckoutPage() {
       setOrderPlaced(true);
       clearCart();
       
-      // Navigate back home after 5 seconds
+      // Navigate back to shop after 5 seconds
       setTimeout(() => {
-        router.push('/');
+        router.push('/?shop=true');
       }, 5000);
     } catch (error) {
       console.error("Order placement failed:", error);
@@ -91,10 +93,10 @@ export default function CheckoutPage() {
             <h1 className="text-3xl font-black text-black dark:text-white mb-4">{t.orderSuccessful}</h1>
             <p className="text-gray-500 dark:text-gray-400 mb-8">{t.orderThankYou}</p>
             <button
-              onClick={() => router.push('/')}
+              onClick={() => router.push('/?shop=true')}
               className="w-full bg-orange-600 text-white py-4 rounded-2xl font-bold hover:bg-orange-700 transition-all flex items-center justify-center gap-2"
             >
-              Back to Home <ArrowRight size={20} />
+              Continue Shopping <ArrowRight size={20} />
             </button>
           </div>
         </div>
@@ -164,6 +166,23 @@ export default function CheckoutPage() {
                     <p className="text-sm text-gray-500">Pay with Airtel Money</p>
                   </div>
                 </div>
+
+                <div className="pt-4 animate-in slide-in-from-top-2 duration-300">
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 mb-2 block">
+                    {t.moMoNumber}
+                  </label>
+                  <input
+                    required
+                    type="tel"
+                    placeholder="078... / 072..."
+                    value={phoneNumber}
+                    onChange={(e) => setPhoneNumber(e.target.value)}
+                    className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-card-border rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all dark:text-white"
+                  />
+                  <p className="text-[10px] text-gray-500 mt-2 italic">
+                    * A prompt will be sent to this number to authorize the 10% prepayment.
+                  </p>
+                </div>
               </div>
             </div>
 
@@ -206,9 +225,17 @@ export default function CheckoutPage() {
               </div>
 
               <div className="space-y-4 pt-6 border-t border-card-border">
-                <div className="flex justify-between items-center pt-4">
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-gray-500 dark:text-gray-400 font-medium">{t.prepaymentAmount}</span>
+                  <span className="font-bold text-black dark:text-white">{formatPrice(prepayment)}</span>
+                </div>
+                <div className="flex justify-between items-center text-sm pb-4 border-b border-card-border border-dashed">
+                  <span className="text-gray-500 dark:text-gray-400 font-medium">{t.dueAtPickup}</span>
+                  <span className="font-bold text-black dark:text-white">{formatPrice(balanceDue)}</span>
+                </div>
+                <div className="flex justify-between items-center pt-2">
                   <span className="text-lg font-bold text-black dark:text-white">{t.total}</span>
-                  <span className="text-2xl font-black text-orange-600">{formatPrice(totalPrice())}</span>
+                  <span className="text-2xl font-black text-orange-600">{formatPrice(total)}</span>
                 </div>
               </div>
 

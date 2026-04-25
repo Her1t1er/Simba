@@ -37,6 +37,9 @@ public class Order {
     @Column(nullable = false)
     private String orderStatus;
 
+    @Column(length = 1000)
+    private String declineReason;
+
     @ManyToOne
     @JoinColumn(name = "branch_id")
     private Branch branch;
@@ -68,6 +71,8 @@ public class Order {
     public void setPrepaymentStatus(String prepaymentStatus) { this.prepaymentStatus = prepaymentStatus; }
     public String getOrderStatus() { return orderStatus; }
     public void setOrderStatus(String orderStatus) { this.orderStatus = orderStatus; }
+    public String getDeclineReason() { return declineReason; }
+    public void setDeclineReason(String declineReason) { this.declineReason = declineReason; }
     public Branch getBranch() { return branch; }
     public void setBranch(Branch branch) { this.branch = branch; }
     public LocalDateTime getCreatedAt() { return createdAt; }

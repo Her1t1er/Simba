@@ -18,7 +18,7 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
   const router = useRouter();
   const { items, updateQuantity, removeItem, totalPrice, clearCart } = useCartStore();
   const { language } = useSettingsStore();
-  const { isAuthenticated } = useAuthStore();
+  const { isCustomerAuthenticated } = useAuthStore();
   const t = translations[language];
   
   const formatPrice = (price: number) => {
@@ -27,7 +27,7 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
 
   const handleCheckout = () => {
     onClose();
-    if (isAuthenticated) {
+    if (isCustomerAuthenticated) {
       router.push('/checkout');
     } else {
       router.push('/login?redirect=/checkout');

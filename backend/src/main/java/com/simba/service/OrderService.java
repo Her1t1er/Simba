@@ -69,13 +69,29 @@ public class OrderService {
                 .collect(Collectors.toList());
     }
 
+    public List<OrderResponseDTO> getOrdersByCustomer(String email) {
+        return orderRepository.findByCustomerEmail(email).stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
+    public List<OrderResponseDTO> getAllOrders() {
+        return orderRepository.findAll().stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
     @Transactional
-    public OrderResponseDTO updatePrepaymentStatus(Long orderId, String status) {
+    public OrderResponseDTO updatePrepaymentStatus(Long orderId, String status, String declineReason) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("Order not found"));
         order.setPrepaymentStatus(status);
         if ("verified".equalsIgnoreCase(status)) {
             order.setOrderStatus("PROCESSING");
+            order.setDeclineReason(null);
+        } else if ("declined".equalsIgnoreCase(status)) {
+            order.setDeclineReason(declineReason);
+            order.setOrderStatus("CANCELLED");
         }
         return mapToResponse(orderRepository.save(order));
     }
@@ -96,6 +112,7 @@ public class OrderService {
         dto.setCustomerPhone(order.getCustomerPhone());
         dto.setOrderStatus(order.getOrderStatus());
         dto.setPrepaymentStatus(order.getPrepaymentStatus());
+        dto.setDeclineReason(order.getDeclineReason());
         dto.setTotal(order.getTotal());
         dto.setPrepaymentAmount(order.getPrepaymentAmount());
         dto.setBalanceDue(order.getBalanceDue());

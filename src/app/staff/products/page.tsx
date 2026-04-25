@@ -48,7 +48,7 @@ function ProductsContent() {
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isSubmitting, setIsLoadingModal] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState<ProductFormData>(initialFormData);
 
   const fetchData = async () => {
@@ -118,7 +118,7 @@ function ProductsContent() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoadingModal(true);
+    setIsSubmitting(true);
     try {
       const payload = {
         ...formData,
@@ -130,13 +130,13 @@ function ProductsContent() {
       } else {
         await api.addProduct(payload);
       }
-      
+
       setIsModalOpen(false);
       fetchData();
     } catch (error) {
       alert("Failed to save product");
     } finally {
-      setIsLoadingModal(false);
+      setIsSubmitting(false);
     }
   };
 
@@ -364,11 +364,11 @@ function ProductsContent() {
                   {t.staff.cancel || "Cancel"}
                 </button>
                 <button
-                  disabled={isLoadingModal}
+                  disabled={isSubmitting}
                   type="submit"
                   className="flex-[2] px-6 py-3 bg-orange-600 text-white rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-orange-700 transition-all disabled:opacity-50"
                 >
-                  {isLoadingModal ? <Loader2 className="animate-spin" size={20} /> : <Save size={20} />}
+                  {isSubmitting ? <Loader2 className="animate-spin" size={20} /> : <Save size={20} />}
                   {formData.id ? (t.staff.updateProduct || "Update Product") : (t.staff.saveProduct || "Save Product")}
                 </button>
               </div>

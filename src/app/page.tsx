@@ -7,32 +7,34 @@ import ProductGrid from '@/components/ProductGrid';
 import CartDrawer from '@/components/CartDrawer';
 import LandingPage from '@/components/LandingPage';
 import { api } from '@/utils/api';
-import { Product, ProductData } from '@/types';
+import { Product } from '@/types';
 import { useSettingsStore } from '@/store/useSettingsStore';
 import { useBranchStore, Branch } from '@/store/useBranchStore';
 import { translations } from '@/utils/translations';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { MapPin, ArrowRight, X } from 'lucide-react';
+import { Suspense } from 'react';
 
-const branches: Branch[] = [
-  'Simba Centenary',
-  'Simba Gishushu',
-  'Simba Kimironko',
-  'Simba Kicukiro',
-  'Simba Kigali Height',
-  'Simba UTC',
-  'Simba Gacuriro',
-  'Simba Gikondo',
-  'Simba sonatube',
-  'Simba Kisimenti',
-  'Simba Rebero',
-  'Simba Nyamirambo',
-  'Simba Musanze'
+const branchesWithLocations = [
+  { name: 'Simba Centenary' as Branch, location: 'KN 4 Ave, City Center (Town)' },
+  { name: 'Simba Gishushu' as Branch, location: 'KN 5 Rd, Near Parliament' },
+  { name: 'Simba Kimironko' as Branch, location: 'KG 11 Ave, Near Kimironko Market' },
+  { name: 'Simba Kicukiro' as Branch, location: 'Kicukiro Centre, Sonatubes' },
+  { name: 'Simba Kigali Height' as Branch, location: 'KG 7 Ave, Opposite Convention Centre' },
+  { name: 'Simba UTC' as Branch, location: 'KN 4 Ave, Union Trade Center' },
+  { name: 'Simba Gacuriro' as Branch, location: 'Near Vision City' },
+  { name: 'Simba Gikondo' as Branch, location: 'Gikondo Industrial Area' },
+  { name: 'Simba sonatube' as Branch, location: 'KN 3 Rd, Sonatube Roundabout' },
+  { name: 'Simba Kisimenti' as Branch, location: 'KG 5 Ave, Remera' },
+  { name: 'Simba Rebero' as Branch, location: 'Rebero Hill' },
+  { name: 'Simba Nyamirambo' as Branch, location: 'KN 2 Ave, Nyamirambo' },
+  { name: 'Simba Musanze' as Branch, location: 'Musanze City Center' }
 ];
 
-export default function Home() {
+function HomeContent() {
   const router = useRouter();
-  const { selectedBranch, selectBranch, clearBranch } = useBranchStore();
+  const searchParams = useSearchParams();
+  const { selectedBranch, selectBranch } = useBranchStore();
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -49,6 +51,10 @@ export default function Home() {
   useEffect(() => {
     setIsHydrated(true);
     
+    if (searchParams.get('shop') === 'true' && selectedBranch) {
+      setIsShowingShop(true);
+    }
+
     // Fetch live data
     const fetchData = async () => {
       try {
@@ -66,7 +72,7 @@ export default function Home() {
     };
     
     fetchData();
-  }, []);
+  }, [searchParams, selectedBranch]);
 
   const { language } = useSettingsStore();
   const t = translations[language];
@@ -81,7 +87,7 @@ export default function Home() {
         .toLowerCase()
         .includes(searchQuery.toLowerCase());
       const matchesCategory = selectedCategory
-        ? product.category === selectedCategory
+        ? product.category.name === selectedCategory
         : true;
       return matchesSearch && matchesCategory;
     });
@@ -115,7 +121,7 @@ export default function Home() {
           featuredProducts={featuredProducts}
           categories={categories}
           productCount={products.length}
-          branches={branches}
+          branches={branchesWithLocations.map(b => b.name)}
           t={t}
         />
 
@@ -140,11 +146,11 @@ export default function Home() {
                 </button>
               </div>
               <div className="p-8 overflow-y-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {branches.map((branch) => (
+                {branchesWithLocations.map((branch) => (
                   <button
-                    key={branch}
+                    key={branch.name}
                     onClick={() => {
-                      selectBranch(branch);
+                      selectBranch(branch.name);
                       setShowBranchSelection(false);
                       setIsShowingShop(true);
                     }}
@@ -154,9 +160,14 @@ export default function Home() {
                       <div className="w-10 h-10 bg-orange-100 dark:bg-orange-900/30 rounded-xl flex items-center justify-center text-orange-600 group-hover:bg-orange-600 group-hover:text-white transition-colors">
                         <MapPin size={20} />
                       </div>
-                      <span className="font-bold text-black dark:text-white group-hover:text-orange-600 transition-colors">
-                        {branch}
-                      </span>
+                      <div>
+                        <p className="font-bold text-black dark:text-white group-hover:text-orange-600 transition-colors">
+                          {branch.name}
+                        </p>
+                        <p className="text-[10px] text-gray-500 group-hover:text-gray-400 mt-1 line-clamp-1">
+                          {branch.location}
+                        </p>
+                      </div>
                     </div>
                     <ArrowRight size={18} className="text-gray-300 group-hover:text-orange-600 group-hover:translate-x-1 transition-all" />
                   </button>
@@ -253,5 +264,17 @@ export default function Home() {
         </div>
       </footer>
     </div>
+  );
+}
+
+export default function Home() {
+  return (
+    <Suspense fallback={
+        <div className="min-h-screen flex items-center justify-center bg-white dark:bg-gray-950">
+          <div className="w-12 h-12 border-4 border-orange-600 border-t-transparent rounded-full animate-spin"></div>
+        </div>
+    }>
+      <HomeContent />
+    </Suspense>
   );
 }

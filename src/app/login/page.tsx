@@ -21,11 +21,7 @@ function LoginForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-<<<<<<< HEAD
-
-=======
     
->>>>>>> 6bfee17 (feat: implement product/category CRUD, user signup, and real API integration)
     try {
       const response = await api.login({ email, password });
       login({
@@ -120,6 +116,11 @@ function LoginForm() {
                 className="w-full pl-10 pr-4 py-3 bg-gray-50 dark:bg-gray-800 border border-card-border rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all dark:text-white"
                 placeholder="••••••••"
               />
+            </div>
+            <div className="flex justify-end">
+              <Link href="/forgot-password" size="sm" className="text-sm font-bold text-orange-600 hover:underline">
+                Forgot password?
+              </Link>
             </div>
           </div>
 
