@@ -104,6 +104,14 @@ public class OrderService {
         return mapToResponse(orderRepository.save(order));
     }
 
+    @Transactional
+    public void markNotificationAsRead(Long orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Order not found"));
+        order.setNotificationRead(true);
+        orderRepository.save(order);
+    }
+
     private OrderResponseDTO mapToResponse(Order order) {
         OrderResponseDTO dto = new OrderResponseDTO();
         dto.setId(order.getId());
@@ -113,6 +121,7 @@ public class OrderService {
         dto.setOrderStatus(order.getOrderStatus());
         dto.setPrepaymentStatus(order.getPrepaymentStatus());
         dto.setDeclineReason(order.getDeclineReason());
+        dto.setNotificationRead(order.isNotificationRead());
         dto.setTotal(order.getTotal());
         dto.setPrepaymentAmount(order.getPrepaymentAmount());
         dto.setBalanceDue(order.getBalanceDue());

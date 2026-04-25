@@ -6,6 +6,7 @@ import Sidebar from '@/components/Sidebar';
 import ProductGrid from '@/components/ProductGrid';
 import CartDrawer from '@/components/CartDrawer';
 import LandingPage from '@/components/LandingPage';
+import Footer from '@/components/Footer';
 import { api } from '@/utils/api';
 import { Product } from '@/types';
 import { useSettingsStore } from '@/store/useSettingsStore';
@@ -31,6 +32,8 @@ const branchesWithLocations = [
   { name: 'Simba Musanze' as Branch, location: 'Musanze City Center' }
 ];
 
+type SortOption = 'featured' | 'price-low' | 'price-high' | 'name';
+
 function HomeContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -42,6 +45,7 @@ function HomeContent() {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [sortOption, setSortOption] = useState<SortOption>('featured');
   const [showBranchSelection, setShowBranchSelection] = useState(false);
   const [isShowingShop, setIsShowingShop] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -82,7 +86,7 @@ function HomeContent() {
   }, [products]);
 
   const filteredProducts = useMemo(() => {
-    return products.filter((product) => {
+    let result = products.filter((product) => {
       const matchesSearch = product.name
         .toLowerCase()
         .includes(searchQuery.toLowerCase());
@@ -91,7 +95,27 @@ function HomeContent() {
         : true;
       return matchesSearch && matchesCategory;
     });
-  }, [searchQuery, selectedCategory, products]);
+
+    // Apply Sorting
+    const sortedResult = [...result];
+    switch (sortOption) {
+      case 'price-low':
+        sortedResult.sort((a, b) => a.price - b.price);
+        break;
+      case 'price-high':
+        sortedResult.sort((a, b) => b.price - a.price);
+        break;
+      case 'name':
+        sortedResult.sort((a, b) => a.name.localeCompare(b.name));
+        break;
+      case 'featured':
+      default:
+        // Featured is default API order
+        break;
+    }
+
+    return sortedResult;
+  }, [searchQuery, selectedCategory, products, sortOption]);
 
   if (!isHydrated || isLoading) return (
     <div className="min-h-screen flex items-center justify-center bg-white dark:bg-gray-950">
@@ -117,6 +141,10 @@ function HomeContent() {
             } else {
               setShowBranchSelection(true);
             }
+          }}
+          onBranchSelect={(branchName) => {
+            selectBranch(branchName as Branch);
+            setIsShowingShop(true);
           }}
           featuredProducts={featuredProducts}
           categories={categories}
@@ -178,14 +206,7 @@ function HomeContent() {
         )}
 
         <CartDrawer isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
-        
-        <footer className="bg-white dark:bg-gray-950 border-t border-card-border py-12">
-          <div className="max-w-7xl mx-auto px-4 text-center">
-            <p className="text-gray-400 dark:text-gray-500 text-sm">
-              © 2026 Simba Market. {t.footer}.
-            </p>
-          </div>
-        </footer>
+        <Footer />
       </div>
     );
   }
@@ -224,27 +245,44 @@ function HomeContent() {
                 </p>
               </div>
               
-              <div className="flex items-center gap-2 bg-white dark:bg-gray-900 p-1 rounded-xl border border-card-border shadow-sm w-fit">
-                <button 
-                  onClick={() => setViewMode('grid')}
-                  className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-all ${
-                    viewMode === 'grid' 
-                      ? 'text-orange-600 bg-orange-50 dark:bg-orange-900/20' 
-                      : 'text-gray-400 hover:text-black dark:hover:text-white'
-                  }`}
-                >
-                  {t.grid}
-                </button>
-                <button 
-                  onClick={() => setViewMode('list')}
-                  className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-all ${
-                    viewMode === 'list' 
-                      ? 'text-orange-600 bg-orange-50 dark:bg-orange-900/20' 
-                      : 'text-gray-400 hover:text-black dark:hover:text-white'
-                  }`}
-                >
-                  {t.list}
-                </button>
+              <div className="flex items-center gap-3 flex-wrap">
+                {/* Sort Dropdown */}
+                <div className="flex items-center gap-2 bg-white dark:bg-gray-900 px-3 py-1.5 rounded-xl border border-card-border shadow-sm">
+                  <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">{t.sort}:</span>
+                  <select 
+                    value={sortOption}
+                    onChange={(e) => setSortOption(e.target.value as SortOption)}
+                    className="bg-transparent text-xs font-bold text-black dark:text-white focus:outline-none cursor-pointer"
+                  >
+                    <option value="featured">{t.sortByFeatured}</option>
+                    <option value="price-low">{t.sortByPriceLow}</option>
+                    <option value="price-high">{t.sortByPriceHigh}</option>
+                    <option value="name">{t.sortByName}</option>
+                  </select>
+                </div>
+
+                <div className="flex items-center gap-2 bg-white dark:bg-gray-900 p-1 rounded-xl border border-card-border shadow-sm w-fit">
+                  <button 
+                    onClick={() => setViewMode('grid')}
+                    className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-all ${
+                      viewMode === 'grid' 
+                        ? 'text-orange-600 bg-orange-50 dark:bg-orange-900/20' 
+                        : 'text-gray-400 hover:text-black dark:hover:text-white'
+                    }`}
+                  >
+                    {t.grid}
+                  </button>
+                  <button 
+                    onClick={() => setViewMode('list')}
+                    className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-all ${
+                      viewMode === 'list' 
+                        ? 'text-orange-600 bg-orange-50 dark:bg-orange-900/20' 
+                        : 'text-gray-400 hover:text-black dark:hover:text-white'
+                    }`}
+                  >
+                    {t.list}
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -254,15 +292,7 @@ function HomeContent() {
       </div>
 
       <CartDrawer isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
-      
-      {/* Footer */}
-      <footer className="bg-white dark:bg-gray-950 border-t border-card-border mt-20 py-12 transition-colors duration-300">
-        <div className="max-w-7xl mx-auto px-4 text-center">
-          <p className="text-gray-400 dark:text-gray-500 text-sm">
-            © 2026 Simba Market. {t.footer}.
-          </p>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }

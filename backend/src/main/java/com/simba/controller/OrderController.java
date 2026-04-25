@@ -48,4 +48,9 @@ public class OrderController {
     public OrderResponseDTO updateStatus(@PathVariable Long id, @RequestParam String status) {
         return orderService.updateOrderStatus(id, status);
     }
+
+    @PatchMapping("/{id}/mark-read")
+    public void markRead(@PathVariable Long id) {
+        orderService.markNotificationAsRead(id);
+    }
 }

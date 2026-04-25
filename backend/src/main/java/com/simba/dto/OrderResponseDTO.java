@@ -10,6 +10,7 @@ public class OrderResponseDTO {
     private String orderStatus;
     private String prepaymentStatus;
     private String declineReason;
+    private boolean notificationRead;
     private Double total;
     private Double prepaymentAmount;
     private Double balanceDue;
@@ -31,6 +32,8 @@ public class OrderResponseDTO {
     public void setPrepaymentStatus(String prepaymentStatus) { this.prepaymentStatus = prepaymentStatus; }
     public String getDeclineReason() { return declineReason; }
     public void setDeclineReason(String declineReason) { this.declineReason = declineReason; }
+    public boolean isNotificationRead() { return notificationRead; }
+    public void setNotificationRead(boolean notificationRead) { this.notificationRead = notificationRead; }
     public Double getTotal() { return total; }
     public void setTotal(Double total) { this.total = total; }
     public Double getPrepaymentAmount() { return prepaymentAmount; }

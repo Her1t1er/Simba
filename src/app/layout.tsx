@@ -3,6 +3,7 @@
 import React, { useEffect } from 'react';
 import { useSettingsStore } from '@/store/useSettingsStore';
 import { GoogleOAuthProvider } from '@react-oauth/google';
+import CartNotification from '@/components/CartNotification';
 import "./globals.css";
 
 // Use environment variable for Google Client ID
@@ -31,6 +32,7 @@ export default function RootLayout({
     <html lang="en" className="h-full antialiased">
       <body className="min-h-full flex flex-col font-sans transition-colors duration-300">
         <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+          <CartNotification />
           {children}
         </GoogleOAuthProvider>
       </body>

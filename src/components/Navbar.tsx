@@ -1,10 +1,10 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { ShoppingCart, Search, Menu, Sun, Moon, Languages, MapPin, User as UserIcon, LogOut, Bell, Package, CheckCircle, XCircle } from 'lucide-react';
+import { ShoppingCart, Search, Menu, Sun, Moon, Languages, MapPin, User as UserIcon, LogOut, Bell, Package, CheckCircle, XCircle, ChevronDown } from 'lucide-react';
 import { useCartStore } from '@/store/useCartStore';
 import { useSettingsStore, Language } from '@/store/useSettingsStore';
-import { useBranchStore } from '@/store/useBranchStore';
+import { useBranchStore, Branch } from '@/store/useBranchStore';
 import { useAuthStore } from '@/store/useAuthStore';
 import { api } from '@/utils/api';
 import { translations } from '@/utils/translations';
@@ -21,13 +21,31 @@ interface NavbarProps {
 const Navbar: React.FC<NavbarProps> = ({ onSearchChange, onCartToggle, onMenuToggle, onLogoClick }) => {
   const router = useRouter();
   const totalItems = useCartStore((state) => state.totalItems());
-  const { selectedBranch, clearBranch } = useBranchStore();
+  const { selectedBranch, selectBranch, clearBranch } = useBranchStore();
   const { customerUser, logout, isCustomerAuthenticated } = useAuthStore();
   const { language, setLanguage, theme, toggleTheme } = useSettingsStore();
   const t = translations[language];
 
   const [notifications, setNotifications] = useState<any[]>([]);
   const [showNotifications, setShowNotifications] = useState(false);
+
+  const handleMarkRead = async (orderId: number) => {
+    try {
+      await api.markNotificationAsRead(orderId);
+      setNotifications(prev => prev.filter(n => n.id !== orderId));
+    } catch (error) {
+      console.error("Failed to mark notification as read:", error);
+    }
+  };
+
+  const handleMarkAllRead = async () => {
+    try {
+      await Promise.all(notifications.map(n => api.markNotificationAsRead(n.id)));
+      setNotifications([]);
+    } catch (error) {
+      console.error("Failed to mark all notifications as read:", error);
+    }
+  };
 
   useEffect(() => {
     if (isCustomerAuthenticated && customerUser?.email) {
@@ -36,12 +54,12 @@ const Navbar: React.FC<NavbarProps> = ({ onSearchChange, onCartToggle, onMenuTog
           const customerOrders = await api.getCustomerOrders(customerUser.email);
           // Sort by date
           const sortedOrders = customerOrders
-            .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-          
-          // Only show interesting status updates (Verified or Declined) from last 24h
+            .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());      
+
+          // Only show interesting status updates (Verified or Declined) that are unread
           const relevantOrders = sortedOrders.filter((o: any) => 
-            o.prepaymentStatus === 'VERIFIED' || o.prepaymentStatus === 'DECLINED'
-          ).slice(0, 5); // Keep last 5
+            (o.prepaymentStatus === 'VERIFIED' || o.prepaymentStatus === 'DECLINED') && !o.notificationRead
+          ).slice(0, 10);
 
           setNotifications(relevantOrders);
         } catch (error) {
@@ -55,16 +73,16 @@ const Navbar: React.FC<NavbarProps> = ({ onSearchChange, onCartToggle, onMenuTog
     }
   }, [isCustomerAuthenticated, customerUser?.email]);
 
-  const handleBranchChange = () => {
-    clearBranch();
-    if (onLogoClick) onLogoClick();
-    router.push('/');
-  };
-
   const languages: { code: Language; label: string }[] = [
     { code: 'en', label: 'English' },
     { code: 'fr', label: 'Français' },
     { code: 'rw', label: 'Kinyarwanda' },
+  ];
+
+  const branches: Branch[] = [
+    'Simba Centenary', 'Simba Gishushu', 'Simba Kimironko', 'Simba Kicukiro',
+    'Simba Kigali Height', 'Simba UTC', 'Simba Gacuriro', 'Simba Gikondo',
+    'Simba sonatube', 'Simba Kisimenti', 'Simba Rebero', 'Simba Nyamirambo', 'Simba Musanze'
   ];
 
   return (
@@ -110,15 +128,48 @@ const Navbar: React.FC<NavbarProps> = ({ onSearchChange, onCartToggle, onMenuTog
 
           {/* Actions */}
           <div className="flex items-center gap-1 sm:gap-2">
-            {/* Branch Selector (Desktop) - Only visible when branch is selected */}
+            {/* Branch Selector (Desktop) */}
             {selectedBranch && (
-              <button 
-                onClick={handleBranchChange}
-                className="hidden lg:flex items-center gap-2 px-3 py-1.5 bg-gray-50 dark:bg-gray-900 border border-card-border rounded-xl text-xs font-bold text-gray-600 dark:text-gray-400 hover:text-orange-600 hover:border-orange-500 transition-all group"
-              >
-                <MapPin size={14} className="text-orange-600" />
-                <span className="max-w-[120px] truncate">{selectedBranch}</span>
-              </button>
+              <div className="relative group hidden lg:block">
+                <button 
+                  className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 dark:bg-gray-900 border border-card-border rounded-xl text-xs font-bold text-gray-600 dark:text-gray-400 hover:text-orange-600 hover:border-orange-500 transition-all group"
+                >
+                  <MapPin size={14} className="text-orange-600" />
+                  <span className="max-w-[120px] truncate">{selectedBranch}</span>
+                  <ChevronDown size={12} className="text-gray-400 group-hover:text-orange-600 transition-transform group-hover:rotate-180" />
+                </button>
+                <div className="absolute left-0 top-full mt-1 w-56 bg-white dark:bg-gray-900 border border-card-border rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all py-2 z-50 max-h-[70vh] overflow-y-auto">
+                  <div className="px-4 py-2 border-b border-card-border mb-1">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Switch Branch</p>
+                  </div>
+                  {branches.map((branch) => (
+                    <button
+                      key={branch}
+                      onClick={() => {
+                        selectBranch(branch);
+                      }}
+                      className={`w-full text-left px-4 py-2 text-xs hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-colors flex items-center justify-between ${
+                        selectedBranch === branch ? 'text-orange-600 font-bold bg-orange-50/50 dark:bg-orange-900/10' : 'text-gray-600 dark:text-gray-400'
+                      }`}
+                    >
+                      {branch}
+                      {selectedBranch === branch && <CheckCircle size={12} />}
+                    </button>
+                  ))}
+                  <div className="mt-1 pt-1 border-t border-card-border">
+                    <button
+                      onClick={() => {
+                        clearBranch();
+                        if (onLogoClick) onLogoClick();
+                        router.push('/');
+                      }}
+                      className="w-full text-left px-4 py-2 text-xs text-red-500 hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors font-bold"
+                    >
+                      Change Location
+                    </button>
+                  </div>
+                </div>
+              </div>
             )}
 
             {/* Language Selector */}
@@ -172,11 +223,21 @@ const Navbar: React.FC<NavbarProps> = ({ onSearchChange, onCartToggle, onMenuTog
                     <div className="absolute right-0 top-full mt-2 w-80 bg-white dark:bg-gray-900 border border-card-border rounded-2xl shadow-2xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
                       <div className="p-4 border-b border-card-border flex justify-between items-center bg-gray-50 dark:bg-gray-800/50">
                         <h3 className="text-sm font-black text-black dark:text-white uppercase tracking-wider">{t.notifications}</h3>
-                        {notifications.length > 0 && (
-                          <span className="text-[10px] bg-orange-600 text-white px-2 py-0.5 rounded-full font-bold">
-                            {notifications.length}
-                          </span>
-                        )}
+                        <div className="flex items-center gap-3">
+                          {notifications.length > 0 && (
+                            <button 
+                              onClick={handleMarkAllRead}
+                              className="text-[10px] font-bold text-orange-600 hover:underline"
+                            >
+                              Mark all read
+                            </button>
+                          )}
+                          {notifications.length > 0 && (
+                            <span className="text-[10px] bg-orange-600 text-white px-2 py-0.5 rounded-full font-bold">
+                              {notifications.length}
+                            </span>
+                          )}
+                        </div>
                       </div>
                       <div className="max-h-96 overflow-y-auto">
                         {notifications.length === 0 ? (
@@ -187,14 +248,14 @@ const Navbar: React.FC<NavbarProps> = ({ onSearchChange, onCartToggle, onMenuTog
                         ) : (
                           <div className="divide-y divide-card-border">
                             {notifications.map((n) => (
-                              <div key={n.id} className="p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors cursor-default">
+                              <div key={n.id} className="p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors cursor-default group/notif relative">
                                 <div className="flex gap-3">
                                   <div className={`mt-0.5 w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
                                     n.prepaymentStatus === 'VERIFIED' ? 'bg-green-100 text-green-600 dark:bg-green-900/30' : 'bg-red-100 text-red-600 dark:bg-red-900/30'
                                   }`}>
                                     {n.prepaymentStatus === 'VERIFIED' ? <CheckCircle size={16} /> : <XCircle size={16} />}
                                   </div>
-                                  <div>
+                                  <div className="flex-1 pr-6">
                                     <p className="text-xs font-black text-black dark:text-white mb-0.5">
                                       {t.orderStatusUpdate}
                                     </p>
@@ -209,6 +270,16 @@ const Navbar: React.FC<NavbarProps> = ({ onSearchChange, onCartToggle, onMenuTog
                                     </p>
                                   </div>
                                 </div>
+                                <button 
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleMarkRead(n.id);
+                                  }}
+                                  className="absolute top-4 right-4 opacity-0 group-hover/notif:opacity-100 p-1.5 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-all"
+                                  title="Mark as read"
+                                >
+                                  <CheckCircle size={14} className="text-gray-400 hover:text-orange-600" />
+                                </button>
                               </div>
                             ))}
                           </div>
@@ -282,4 +353,3 @@ const Navbar: React.FC<NavbarProps> = ({ onSearchChange, onCartToggle, onMenuTog
 };
 
 export default Navbar;
-

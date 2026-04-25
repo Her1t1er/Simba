@@ -19,6 +19,7 @@ import { translations } from '@/utils/translations';
 
 interface LandingPageProps {
   onStartShopping: () => void;
+  onBranchSelect: (branch: string) => void;
   featuredProducts: Product[];
   categories: string[];
   productCount: number;
@@ -26,8 +27,23 @@ interface LandingPageProps {
   t: typeof translations['en'];
 }
 
+const categoryImages: Record<string, string> = {
+  "Cosmetics & Personal Care": "https://images.unsplash.com/photo-1596462502278-27bf86473a8c?auto=format&fit=crop&q=80&w=500",
+  "Alcoholic Drinks": "https://images.unsplash.com/photo-1569701881653-04b73ca58296?auto=format&fit=crop&q=80&w=500",
+  "Food Products": "https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&q=80&w=500",
+  "Kitchenware & Electronics": "https://images.unsplash.com/photo-1556910103-1c02745a303e?auto=format&fit=crop&q=80&w=500",
+  "General": "https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&q=80&w=500",
+  "Cleaning & Sanitary": "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&q=80&w=500",
+  "Sports & Wellness": "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?auto=format&fit=crop&q=80&w=500",
+  "Stationery": "https://images.unsplash.com/photo-1456735190827-d1262f71b8a3?auto=format&fit=crop&q=80&w=500",
+  "Baby Products": "https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?auto=format&fit=crop&q=80&w=500",
+  "Kitchen Storage": "https://images.unsplash.com/photo-1590794056226-79ef3a8147e1?auto=format&fit=crop&q=80&w=500",
+  "Pet Care": "https://images.unsplash.com/photo-1583337130417-3346a1be7dee?auto=format&fit=crop&q=80&w=500"
+};
+
 const LandingPage: React.FC<LandingPageProps> = ({ 
   onStartShopping, 
+  onBranchSelect,
   featuredProducts, 
   categories,
   productCount,
@@ -171,9 +187,18 @@ const LandingPage: React.FC<LandingPageProps> = ({
               >
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent z-10" />
                 <div className="absolute inset-0 group-hover:scale-110 transition-transform duration-500">
-                  <div className="w-full h-full bg-orange-600/10 flex items-center justify-center">
-                    <ShoppingBag size={40} className="text-orange-600/20" />
-                  </div>
+                  {categoryImages[category] ? (
+                    <Image 
+                      src={categoryImages[category]} 
+                      alt={category} 
+                      fill 
+                      className="object-cover opacity-60 group-hover:opacity-100 transition-opacity"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-orange-600/10 flex items-center justify-center">
+                      <ShoppingBag size={40} className="text-orange-600/20" />
+                    </div>
+                  )}
                 </div>
                 <div className="absolute bottom-4 left-4 right-4 z-20">
                   <div className="text-white font-bold truncate">
@@ -264,20 +289,16 @@ const LandingPage: React.FC<LandingPageProps> = ({
           </div>
           
           <div className="flex flex-wrap justify-center gap-4">
-            {branches.slice(0, 10).map((branch) => (
-              <div 
+            {branches.map((branch) => (
+              <button 
                 key={branch}
-                className="flex items-center gap-2 px-4 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl text-sm font-bold text-gray-700 dark:text-gray-300"
+                onClick={() => onBranchSelect(branch)}
+                className="flex items-center gap-2 px-6 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl text-sm font-bold text-gray-700 dark:text-gray-300 hover:border-orange-500 hover:bg-white dark:hover:bg-gray-800 hover:text-orange-600 transition-all shadow-sm active:scale-95"
               >
                 <MapPin size={16} className="text-orange-600" />
                 {branch}
-              </div>
+              </button>
             ))}
-            {branches.length > 10 && (
-              <div className="flex items-center gap-2 px-4 py-2 bg-orange-50 dark:bg-orange-900/20 border border-orange-100 dark:border-orange-800/30 rounded-xl text-sm font-bold text-orange-600">
-                + {branches.length - 10} {t.landing.moreLocations}
-              </div>
-            )}
           </div>
         </div>
       </section>

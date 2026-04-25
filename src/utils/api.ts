@@ -1,4 +1,4 @@
-const API_BASE_URL = 'http://localhost:8081/api';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8081/api';
 
 export const api = {
   async handleResponse(res: Response) {
@@ -157,6 +157,14 @@ export const api = {
       method: 'PATCH',
     });
     return this.handleResponse(res);
+  },
+
+  async markNotificationAsRead(orderId: number) {
+    const res = await fetch(`${API_BASE_URL}/orders/${orderId}/mark-read`, {
+      method: 'PATCH',
+    });
+    if (!res.ok) return this.handleResponse(res);
+    return null;
   },
 
   // Inventory

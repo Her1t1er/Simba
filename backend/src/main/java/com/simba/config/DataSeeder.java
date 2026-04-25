@@ -89,32 +89,50 @@ public class DataSeeder implements CommandLineRunner {
             }
         }
 
-        // 3. Create or Update Demo Manager
-        Optional<User> managerOpt = userRepository.findByEmail("manager@simba.rw");
-        if (managerOpt.isEmpty()) {
-            List<Branch> branches = branchRepository.findAll();
-            if (!branches.isEmpty()) {
-                Branch firstBranch = branches.get(0);
-                User manager = new User();
-                manager.setName("Demo Manager");
-                manager.setEmail("manager@simba.rw");
-                manager.setPassword("{noop}password123");
-                manager.setRole("MANAGER");
-                manager.setProvider("LOCAL");
-                manager.setEnabled(true);
-                manager.setManagedBranch(firstBranch);
-                userRepository.save(manager);
-                System.out.println("Demo manager created!");
+        // 3. Create or Update Managers for ALL branches
+        List<Branch> allBranches = branchRepository.findAll();
+        for (Branch branch : allBranches) {
+            // Generate email based on branch name (e.g., "Simba Centenary" -> "centenary@simba.rw")
+            String namePart = branch.getName().toLowerCase().replace("simba ", "").replace(" ", "");
+            String email = namePart + "@simba.rw";
+            
+            // Special case for the original demo manager email if needed, but the pattern above handles it
+            if (branch.getName().equals("Simba Centenary")) {
+                // Keep the original manager@simba.rw as an alias or primary
+                createOrEnableManager("manager@simba.rw", "Centenary Manager", branch);
             }
-        } else {
-            User manager = managerOpt.get();
-            if (!manager.isEnabled()) {
-                manager.setEnabled(true);
-                userRepository.save(manager);
-                System.out.println("Existing demo manager enabled!");
-            }
+            
+            createOrEnableManager(email, branch.getName() + " Manager", branch);
         }
 
         System.out.println("Data seeding process completed!");
+    }
+
+    private void createOrEnableManager(String email, String name, Branch branch) {
+        Optional<User> managerOpt = userRepository.findByEmail(email);
+        if (managerOpt.isEmpty()) {
+            User manager = new User();
+            manager.setName(name);
+            manager.setEmail(email);
+            manager.setPassword("{noop}password123");
+            manager.setRole("MANAGER");
+            manager.setProvider("LOCAL");
+            manager.setEnabled(true);
+            manager.setManagedBranch(branch);
+            userRepository.save(manager);
+            System.out.println("Manager created for: " + branch.getName() + " (" + email + ")");
+        } else {
+            User manager = managerOpt.get();
+            boolean changed = false;
+            if (!manager.isEnabled()) {
+                manager.setEnabled(true);
+                changed = true;
+            }
+            if (manager.getManagedBranch() == null) {
+                manager.setManagedBranch(branch);
+                changed = true;
+            }
+            if (changed) userRepository.save(manager);
+        }
     }
 }

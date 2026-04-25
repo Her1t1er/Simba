@@ -37,6 +37,8 @@ public class Order {
     @Column(nullable = false)
     private String orderStatus;
 
+    private boolean notificationRead = false;
+
     @Column(length = 1000)
     private String declineReason;
 
@@ -71,6 +73,8 @@ public class Order {
     public void setPrepaymentStatus(String prepaymentStatus) { this.prepaymentStatus = prepaymentStatus; }
     public String getOrderStatus() { return orderStatus; }
     public void setOrderStatus(String orderStatus) { this.orderStatus = orderStatus; }
+    public boolean isNotificationRead() { return notificationRead; }
+    public void setNotificationRead(boolean notificationRead) { this.notificationRead = notificationRead; }
     public String getDeclineReason() { return declineReason; }
     public void setDeclineReason(String declineReason) { this.declineReason = declineReason; }
     public Branch getBranch() { return branch; }

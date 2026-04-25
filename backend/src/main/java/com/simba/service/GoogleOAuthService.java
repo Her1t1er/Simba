@@ -71,8 +71,8 @@ public class GoogleOAuthService {
                 user.setPassword("{noop}google-oauth-placeholder"); 
                 user = userRepository.save(user);
                 
-                // Send confirmation email for new Google users
-                emailService.sendRegistrationConfirmation(user.getEmail(), user.getName());
+                // Send confirmation email for new Google users (verified instantly, so token/redirect are null)
+                emailService.sendRegistrationConfirmation(user.getEmail(), user.getName(), null, null);
             }
 
             return new LoginResponseDTO(
