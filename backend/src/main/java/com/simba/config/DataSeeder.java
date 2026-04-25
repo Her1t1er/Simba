@@ -52,6 +52,8 @@ public class DataSeeder implements CommandLineRunner {
             // Check multiple paths (Local vs Docker)
             String[] possiblePaths = {
                 "src/main/resources/data/simba_products.json",
+                "target/classes/data/simba_products.json",
+                "data/simba_products.json",
                 "../src/data/simba_products.json",
                 "src/data/simba_products.json"
             };
