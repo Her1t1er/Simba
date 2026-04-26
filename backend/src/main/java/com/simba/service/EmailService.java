@@ -14,6 +14,9 @@ public class EmailService {
     @Value("${spring.mail.username}")
     private String fromEmail;
 
+    @Value("${FRONTEND_URL:http://localhost:3000}")
+    private String frontendUrl;
+
     public EmailService(JavaMailSender mailSender) {
         this.mailSender = mailSender;
     }
@@ -25,7 +28,7 @@ public class EmailService {
         message.setTo(toEmail);
         message.setSubject("Verify your Simba Market account");
         
-        String verificationUrl = "http://localhost:3000/verify?token=" + token;
+        String verificationUrl = frontendUrl + "/verify?token=" + token;
         if (redirect != null && !redirect.isEmpty()) {
             verificationUrl += "&redirect=" + redirect;
         }
@@ -56,7 +59,7 @@ public class EmailService {
         message.setTo(toEmail);
         message.setSubject("Reset your Simba Market password");
         
-        String resetUrl = "http://localhost:3000/reset-password?token=" + token;
+        String resetUrl = frontendUrl + "/reset-password?token=" + token;
         
         message.setText("Dear " + name + ",\n\n" +
                 "We received a request to reset your password for your Simba Market account.\n\n" +
