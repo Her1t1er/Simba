@@ -114,6 +114,15 @@ public class AuthService {
             String inputPassword = request.getPassword();
             
             if (storedPassword != null && (storedPassword.equals(inputPassword) || storedPassword.equals("{noop}" + inputPassword))) {
+                
+                // For managers, verify branch assignment
+                if (user.getRole().equalsIgnoreCase("MANAGER")) {
+                    if (request.getBranchName() == null || user.getManagedBranch() == null || 
+                        !user.getManagedBranch().getName().equalsIgnoreCase(request.getBranchName())) {
+                        throw new RuntimeException("You are not authorized to manage this branch.");
+                    }
+                }
+
                 return new LoginResponseDTO(
                     "demo-jwt-token",
                     user.getName(),

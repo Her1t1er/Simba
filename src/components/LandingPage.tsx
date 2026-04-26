@@ -179,7 +179,7 @@ const LandingPage: React.FC<LandingPageProps> = ({
           </div>
           
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {categories.slice(0, 8).map((category) => (
+            {categories.map((category) => (
               <button
                 key={category}
                 onClick={onStartShopping}
