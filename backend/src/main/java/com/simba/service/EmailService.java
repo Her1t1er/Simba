@@ -43,6 +43,9 @@ public class EmailService {
             System.out.println("Confirmation email sent to: " + toEmail);
         } catch (Exception e) {
             System.err.println("Failed to send email to " + toEmail + ": " + e.getMessage());
+            System.out.println("\n--- LOCAL DEV: VERIFICATION LINK ---");
+            System.out.println(verificationUrl);
+            System.out.println("------------------------------------\n");
         }
     }
 
@@ -69,6 +72,9 @@ public class EmailService {
             System.out.println("Password reset email sent to: " + toEmail);
         } catch (Exception e) {
             System.err.println("Failed to send reset email to " + toEmail + ": " + e.getMessage());
+            System.out.println("\n--- LOCAL DEV: PASSWORD RESET LINK ---");
+            System.out.println(resetUrl);
+            System.out.println("--------------------------------------\n");
         }
     }
 }

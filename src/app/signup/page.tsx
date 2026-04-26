@@ -15,7 +15,7 @@ function SignupForm() {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
-  const { signup } = useAuthStore();
+  const { signup, logout } = useAuthStore();
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirect = searchParams.get('redirect') || '/';
@@ -26,6 +26,8 @@ function SignupForm() {
 
     try {
       await api.signup({ name, email, password, redirect });
+      // Ensure any old session is cleared so the Navbar doesn't show a user
+      logout();
       setIsSuccess(true);
     } catch (error: any) {
       console.error("Signup failed:", error);
@@ -39,12 +41,20 @@ function SignupForm() {
     setIsLoading(true);
     try {
       const response = await api.googleAuth(credentialResponse.credential);
-      signup({
-        name: response.name,
-        email: response.email,
-        role: response.role
-      }, response.token);
-      router.push(redirect);
+      
+      if (response.token) {
+        // User is already verified, log them in
+        signup({
+          name: response.name,
+          email: response.email,
+          role: response.role
+        }, response.token);
+        router.push(redirect);
+      } else {
+        // User needs to verify their email
+        setEmail(response.email);
+        setIsSuccess(true);
+      }
     } catch (error) {
       console.error("Google Auth failed:", error);
       alert("Failed to authenticate with Google.");

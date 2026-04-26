@@ -69,52 +69,71 @@ public class DataSeeder implements CommandLineRunner {
         if (resource == null) {
             System.out.println("JSON data file not found in any of the search locations (Resources).");
         } else {
-            System.out.println("Checking products from resource: " + resource.getDescription());
+            System.out.println("Loading products from: " + resource.getDescription());
             try (InputStream is = resource.getInputStream()) {
                 ObjectMapper mapper = new ObjectMapper();
                 JsonNode root = mapper.readTree(is);
                 JsonNode productsNode = root.get("products");
 
+                if (productsNode == null || !productsNode.isArray()) {
+                    System.err.println("Error: 'products' node not found or is not an array in JSON");
+                    return;
+                }
+
                 int addedCount = 0;
+                int updatedCount = 0;
+                
                 for (JsonNode node : productsNode) {
                     Long id = node.get("id").asLong();
-                    
-                    // Check if product already exists
-                    if (productRepository.existsById(id)) {
-                        continue; 
-                    }
-
                     String categoryName = node.get("category").asText();
+                    
+                    // 1. Ensure Category exists
                     Category category = categoryRepository.findByName(categoryName);
                     if (category == null) {
                         category = categoryRepository.save(new Category(categoryName));
+                        System.out.println("Created missing category: " + categoryName);
                     }
 
-                    Product product = new Product();
-                    product.setId(id);
-                    product.setName(node.get("name").asText());
-                    product.setPrice(node.get("price").asDouble());
-                    product.setUnit(node.get("unit").asText());
-                    product.setImage(node.get("image").asText());
-                    product.setInStock(node.has("inStock") ? node.get("inStock").asBoolean() : true);
-                    product.setCategory(category);
-                    productRepository.save(product);
-
-                    // Add to inventory for all branches
-                    for (Branch branch : branchRepository.findAll()) {
-                        Inventory inv = new Inventory();
-                        inv.setBranch(branch);
-                        inv.setProduct(product);
-                        inv.setInStock(true);
-                        inventoryRepository.save(inv);
+                    // 2. Get or Create Product
+                    Product product;
+                    Optional<Product> existingProduct = productRepository.findById(id);
+                    if (existingProduct.isPresent()) {
+                        product = existingProduct.get();
+                        // Update category link if it's wrong or missing
+                        if (product.getCategory() == null || !product.getCategory().getName().equals(categoryName)) {
+                            product.setCategory(category);
+                            productRepository.save(product);
+                        }
+                        updatedCount++;
+                    } else {
+                        product = new Product();
+                        product.setId(id);
+                        product.setName(node.get("name").asText());
+                        product.setPrice(node.get("price").asDouble());
+                        product.setUnit(node.get("unit").asText());
+                        product.setImage(node.get("image").asText());
+                        product.setInStock(node.has("inStock") ? node.get("inStock").asBoolean() : true);
+                        product.setCategory(category);
+                        product = productRepository.save(product);
+                        addedCount++;
                     }
-                    addedCount++;
+
+                    // 3. Ensure Inventory exists for ALL branches for this product
+                    List<Branch> allBranches = branchRepository.findAll();
+                    for (Branch branch : allBranches) {
+                        if (inventoryRepository.findByBranchAndProduct(branch, product).isEmpty()) {
+                            Inventory inv = new Inventory();
+                            inv.setBranch(branch);
+                            inv.setProduct(product);
+                            inv.setInStock(true);
+                            inventoryRepository.save(inv);
+                        }
+                    }
                 }
-                if (addedCount > 0) {
-                    System.out.println("Successfully added " + addedCount + " new products to the database!");
-                }
+                System.out.println("Seeding Summary: Added " + addedCount + ", Verified/Updated " + updatedCount + " products.");
             } catch (Exception e) {
                 System.err.println("Error reading JSON file: " + e.getMessage());
+                e.printStackTrace();
             }
         }
 

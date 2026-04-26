@@ -61,18 +61,28 @@ public class GoogleOAuthService {
 
             if (userOptional.isPresent()) {
                 user = userOptional.get();
+                if (!user.isEnabled()) {
+                    // User exists but isn't verified yet
+                    return new LoginResponseDTO(null, user.getName(), user.getEmail(), user.getRole(), null);
+                }
             } else {
                 user = new User();
                 user.setEmail(email);
                 user.setName(name != null ? name : email.split("@")[0]);
                 user.setRole("customer");
                 user.setProvider("GOOGLE");
-                user.setEnabled(true);
-                user.setPassword("{noop}google-oauth-placeholder"); 
+                user.setEnabled(false); // Must verify first
+                user.setPassword("{noop}google-oauth-placeholder");
+                
+                String token = java.util.UUID.randomUUID().toString();
+                user.setVerificationToken(token);
                 user = userRepository.save(user);
                 
-                // Send confirmation email for new Google users (verified instantly, so token/redirect are null)
-                emailService.sendRegistrationConfirmation(user.getEmail(), user.getName(), null, null);
+                // Send confirmation email
+                emailService.sendRegistrationConfirmation(user.getEmail(), user.getName(), token, null);
+                
+                // Return null token to prevent auto-login
+                return new LoginResponseDTO(null, user.getName(), user.getEmail(), user.getRole(), null);
             }
 
             return new LoginResponseDTO(
