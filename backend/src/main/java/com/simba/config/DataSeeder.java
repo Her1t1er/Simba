@@ -161,7 +161,7 @@ public class DataSeeder implements CommandLineRunner {
             manager.setName(name);
             manager.setEmail(email);
             manager.setPassword("{noop}password123");
-            manager.setRole("MANAGER");
+            manager.setRole("MANAGER"); // Ensure this is exactly 'MANAGER'
             manager.setProvider("LOCAL");
             manager.setEnabled(true);
             manager.setManagedBranch(branch);
@@ -176,6 +176,11 @@ public class DataSeeder implements CommandLineRunner {
             }
             if (manager.getManagedBranch() == null) {
                 manager.setManagedBranch(branch);
+                changed = true;
+            }
+            // Ensure existing managers also have the correct role
+            if (!"MANAGER".equals(manager.getRole())) {
+                manager.setRole("MANAGER");
                 changed = true;
             }
             if (changed) userRepository.save(manager);
