@@ -36,17 +36,30 @@ public class DataSeeder implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
-        // 1. Seed Branches
-        if (branchRepository.count() == 0) {
-            List<String> branchNames = Arrays.asList(
-                "Simba Centenary", "Simba Gishushu", "Simba Kimironko", "Simba Kicukiro",
-                "Simba Kigali Height", "Simba UTC", "Simba Gacuriro", "Simba Gikondo",
-                "Simba sonatube", "Simba Kisimenti", "Simba Rebero", "Simba Nyamirambo", "Simba Musanze"
-            );
-            for (String name : branchNames) {
-                branchRepository.save(new Branch(name));
+        try {
+            // 1. Seed Branches FIRST
+            long branchCount = 0;
+            try {
+                branchCount = branchRepository.count();
+            } catch (Exception e) {
+                System.out.println("Tables may not exist yet, skipping count check...");
             }
-            System.out.println("Branches seeded successfully!");
+
+            if (branchCount == 0) {
+                List<String> branchNames = Arrays.asList(
+                    "Simba Centenary", "Simba Gishushu", "Simba Kimironko", "Simba Kicukiro",
+                    "Simba Kigali Height", "Simba UTC", "Simba Gacuriro", "Simba Gikondo",
+                    "Simba sonatube", "Simba Kisimenti", "Simba Rebero", "Simba Nyamirambo", "Simba Musanze"
+                );
+                for (String name : branchNames) {
+                    branchRepository.save(new Branch(name));
+                }
+                System.out.println("Branches seeded successfully!");
+            }
+        } catch (Exception e) {
+            System.err.println("Initial branch seeding failed: " + e.getMessage());
+            // If this fails, the rest will likely fail, so we stop here
+            return;
         }
 
         // 2. Load Products from JSON
