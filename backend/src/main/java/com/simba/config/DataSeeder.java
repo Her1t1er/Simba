@@ -8,12 +8,15 @@ import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.stereotype.Component;
 import java.io.InputStream;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 
-@Configuration
+@Component
 public class DataSeeder implements CommandLineRunner {
 
     private final CategoryRepository categoryRepository;
@@ -35,12 +38,35 @@ public class DataSeeder implements CommandLineRunner {
     }
 
     @Override
-    public void run(String... args) throws Exception {
+    public void run(String... args) {
+        // We trigger the seeding in a background thread
+        // This allows the main Spring Boot app to finish starting and bind to the port immediately
+        CompletableFuture.runAsync(this::runSeedingProcess);
+        System.out.println(">>> Simba Speed Boost: App is starting up. Data seeding will continue in the background.");
+    }
+
+    private void runSeedingProcess() {
         try {
-            System.out.println("Starting data seeding process...");
+            System.out.println("Starting background data seeding...");
             
-            // 1. Seed Branches
-            if (isTableEmpty(branchRepository)) {
+            // 1. Seed Branches (Fast)
+            seedBranches();
+
+            // 2. Seed Products (Heavy lifting)
+            seedProducts();
+
+            // 3. Seed Managers (Fast)
+            seedManagers();
+
+            System.out.println(">>> SUCCESS: Background data seeding completed!");
+        } catch (Exception e) {
+            System.err.println("WARNING: Data seeding encountered an error in background: " + e.getMessage());
+        }
+    }
+
+    private void seedBranches() {
+        try {
+            if (branchRepository.count() == 0) {
                 List<String> branchNames = Arrays.asList(
                     "Simba Centenary", "Simba Gishushu", "Simba Kimironko", "Simba Kicukiro",
                     "Simba Kigali Height", "Simba UTC", "Simba Gacuriro", "Simba Gikondo",
@@ -49,26 +75,10 @@ public class DataSeeder implements CommandLineRunner {
                 for (String name : branchNames) {
                     branchRepository.save(new Branch(name));
                 }
-                System.out.println("Branches seeded successfully!");
+                System.out.println("Branches seeded.");
             }
-
-            // 2. Seed Products
-            seedProducts();
-
-            // 3. Seed Managers
-            seedManagers();
-
-            System.out.println("Data seeding process completed successfully!");
         } catch (Exception e) {
-            System.err.println("WARNING: Data seeding skipped or failed. This usually happens if the database schema is still being created. Error: " + e.getMessage());
-        }
-    }
-
-    private boolean isTableEmpty(org.springframework.data.jpa.repository.JpaRepository<?, ?> repo) {
-        try {
-            return repo.count() == 0;
-        } catch (Exception e) {
-            return true; // Assume empty if table doesn't exist
+            System.out.println("Branch seeding skipped (tables might be initializing).");
         }
     }
 
@@ -91,12 +101,8 @@ public class DataSeeder implements CommandLineRunner {
             } catch (Exception e) {}
         }
 
-        if (resource == null) {
-            System.out.println("No product data file found, skipping product seeding.");
-            return;
-        }
+        if (resource == null) return;
 
-        System.out.println("Loading products from: " + resource.getDescription());
         try (InputStream is = resource.getInputStream()) {
             ObjectMapper mapper = new ObjectMapper();
             JsonNode root = mapper.readTree(is);
@@ -145,7 +151,10 @@ public class DataSeeder implements CommandLineRunner {
                         addedCount++;
                     }
 
-                    for (Branch branch : branchRepository.findAll()) {
+                    // For the speed boost, we only ensure inventory for the primary branch first
+                    // We can load others later or on demand, but let's do all for consistency
+                    List<Branch> allBranches = branchRepository.findAll();
+                    for (Branch branch : allBranches) {
                         if (inventoryRepository.findByBranchAndProduct(branch, product).isEmpty()) {
                             Inventory inv = new Inventory();
                             inv.setBranch(branch);
@@ -156,9 +165,9 @@ public class DataSeeder implements CommandLineRunner {
                     }
                 } catch (Exception e) {}
             }
-            System.out.println("Product Seeding: Added " + addedCount + ", Updated/Verified " + updatedCount);
+            System.out.println("Product Background Seeding: Success (" + (addedCount + updatedCount) + ")");
         } catch (Exception e) {
-            System.err.println("Error reading product JSON: " + e.getMessage());
+            System.err.println("Background JSON error: " + e.getMessage());
         }
     }
 
@@ -168,7 +177,6 @@ public class DataSeeder implements CommandLineRunner {
             for (Branch branch : allBranches) {
                 String namePart = branch.getName().toLowerCase().replace("simba ", "").replace(" ", "");
                 String email = namePart + "@simba.rw";
-                
                 if (branch.getName().equals("Simba Centenary")) {
                     createOrEnableManager("manager@simba.rw", "Centenary Manager", branch);
                 }
@@ -190,7 +198,6 @@ public class DataSeeder implements CommandLineRunner {
                 manager.setEnabled(true);
                 manager.setManagedBranch(branch);
                 userRepository.save(manager);
-                System.out.println("Manager created: " + email);
             } else {
                 User manager = managerOpt.get();
                 manager.setRole("MANAGER");
