@@ -45,7 +45,12 @@ export default function StaffLayout({
   ];
 
   React.useEffect(() => {
-    if (pathname !== '/staff/login' && (!isStaffAuthenticated || staffUser?.role.toLowerCase() !== 'manager')) {
+    if (isStaffAuthenticated && staffUser) {
+      const userRole = staffUser.role?.toLowerCase();
+      if (userRole !== 'manager' && userRole !== 'admin') {
+        router.push('/staff/login');
+      }
+    } else if (pathname !== '/staff/login') {
       router.push('/staff/login');
     }
   }, [isStaffAuthenticated, staffUser, router, pathname]);
@@ -54,8 +59,13 @@ export default function StaffLayout({
     return <>{children}</>;
   }
 
-  if (!staffUser || staffUser.role.toLowerCase() !== 'manager') {
-    return null;
+  const userRole = staffUser?.role?.toLowerCase();
+  if (!isStaffAuthenticated || !staffUser || (userRole !== 'manager' && userRole !== 'admin')) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600"></div>
+      </div>
+    );
   }
 
   return (

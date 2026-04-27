@@ -174,29 +174,18 @@ public class DataSeeder implements CommandLineRunner {
             manager.setName(name);
             manager.setEmail(email);
             manager.setPassword("{noop}password123");
-            manager.setRole("MANAGER"); // Ensure this is exactly 'MANAGER'
+            manager.setRole("MANAGER");
             manager.setProvider("LOCAL");
             manager.setEnabled(true);
             manager.setManagedBranch(branch);
             userRepository.save(manager);
-            System.out.println("Manager created for: " + branch.getName() + " (" + email + ")");
+            System.out.println("Manager created: " + email + " for branch " + branch.getName());
         } else {
             User manager = managerOpt.get();
-            boolean changed = false;
-            if (!manager.isEnabled()) {
-                manager.setEnabled(true);
-                changed = true;
-            }
-            if (manager.getManagedBranch() == null) {
-                manager.setManagedBranch(branch);
-                changed = true;
-            }
-            // Ensure existing managers also have the correct role
-            if (!"MANAGER".equals(manager.getRole())) {
-                manager.setRole("MANAGER");
-                changed = true;
-            }
-            if (changed) userRepository.save(manager);
+            manager.setRole("MANAGER");
+            manager.setManagedBranch(branch);
+            manager.setEnabled(true);
+            userRepository.save(manager);
         }
     }
 }
