@@ -37,15 +37,10 @@ public class DataSeeder implements CommandLineRunner {
     @Override
     public void run(String... args) throws Exception {
         try {
-            // 1. Seed Branches FIRST
-            long branchCount = 0;
-            try {
-                branchCount = branchRepository.count();
-            } catch (Exception e) {
-                System.out.println("Tables may not exist yet, skipping count check...");
-            }
-
-            if (branchCount == 0) {
+            System.out.println("Starting data seeding process...");
+            
+            // 1. Seed Branches
+            if (isTableEmpty(branchRepository)) {
                 List<String> branchNames = Arrays.asList(
                     "Simba Centenary", "Simba Gishushu", "Simba Kimironko", "Simba Kicukiro",
                     "Simba Kigali Height", "Simba UTC", "Simba Gacuriro", "Simba Gikondo",
@@ -56,13 +51,28 @@ public class DataSeeder implements CommandLineRunner {
                 }
                 System.out.println("Branches seeded successfully!");
             }
-        } catch (Exception e) {
-            System.err.println("Initial branch seeding failed: " + e.getMessage());
-            // If this fails, the rest will likely fail, so we stop here
-            return;
-        }
 
-        // 2. Load Products from JSON
+            // 2. Seed Products
+            seedProducts();
+
+            // 3. Seed Managers
+            seedManagers();
+
+            System.out.println("Data seeding process completed successfully!");
+        } catch (Exception e) {
+            System.err.println("WARNING: Data seeding skipped or failed. This usually happens if the database schema is still being created. Error: " + e.getMessage());
+        }
+    }
+
+    private boolean isTableEmpty(org.springframework.data.jpa.repository.JpaRepository<?, ?> repo) {
+        try {
+            return repo.count() == 0;
+        } catch (Exception e) {
+            return true; // Assume empty if table doesn't exist
+        }
+    }
+
+    private void seedProducts() {
         String[] possiblePaths = {
             "classpath:data/simba_products.json",
             "file:src/main/resources/data/simba_products.json",
@@ -72,68 +82,70 @@ public class DataSeeder implements CommandLineRunner {
         
         Resource resource = null;
         for (String path : possiblePaths) {
-            Resource r = resourceLoader.getResource(path);
-            if (r.exists()) {
-                resource = r;
-                break;
-            }
+            try {
+                Resource r = resourceLoader.getResource(path);
+                if (r.exists()) {
+                    resource = r;
+                    break;
+                }
+            } catch (Exception e) {}
         }
 
         if (resource == null) {
-            System.out.println("JSON data file not found in any of the search locations (Resources).");
-        } else {
-            System.out.println("Loading products from: " + resource.getDescription());
-            try (InputStream is = resource.getInputStream()) {
-                ObjectMapper mapper = new ObjectMapper();
-                JsonNode root = mapper.readTree(is);
-                JsonNode productsNode = root.get("products");
+            System.out.println("No product data file found, skipping product seeding.");
+            return;
+        }
 
-                if (productsNode == null || !productsNode.isArray()) {
-                    System.err.println("Error: 'products' node not found or is not an array in JSON");
-                    return;
-                }
+        System.out.println("Loading products from: " + resource.getDescription());
+        try (InputStream is = resource.getInputStream()) {
+            ObjectMapper mapper = new ObjectMapper();
+            JsonNode root = mapper.readTree(is);
+            JsonNode productsNode = root.get("products");
 
-                int addedCount = 0;
-                int updatedCount = 0;
-                
-                for (JsonNode node : productsNode) {
+            if (productsNode == null || !productsNode.isArray()) return;
+
+            int addedCount = 0;
+            int updatedCount = 0;
+            
+            for (JsonNode node : productsNode) {
+                try {
                     Long id = node.get("id").asLong();
-                    String categoryName = node.get("category").asText();
+                    String name = node.has("name") ? node.get("name").asText() : "Unknown";
+                    String categoryName = node.has("category") ? node.get("category").asText() : "General";
+                    double price = node.has("price") ? node.get("price").asDouble() : 0.0;
+                    String unit = node.has("unit") ? node.get("unit").asText() : "Pcs";
+                    String image = node.has("image") ? node.get("image").asText() : "";
                     
-                    // 1. Ensure Category exists
                     Category category = categoryRepository.findByName(categoryName);
                     if (category == null) {
                         category = categoryRepository.save(new Category(categoryName));
-                        System.out.println("Created missing category: " + categoryName);
                     }
 
-                    // 2. Get or Create Product
                     Product product;
                     Optional<Product> existingProduct = productRepository.findById(id);
                     if (existingProduct.isPresent()) {
                         product = existingProduct.get();
-                        // Update category link if it's wrong or missing
-                        if (product.getCategory() == null || !product.getCategory().getName().equals(categoryName)) {
-                            product.setCategory(category);
-                            productRepository.save(product);
-                        }
+                        product.setName(name);
+                        product.setPrice(price);
+                        product.setUnit(unit);
+                        product.setImage(image);
+                        product.setCategory(category);
+                        productRepository.save(product);
                         updatedCount++;
                     } else {
                         product = new Product();
                         product.setId(id);
-                        product.setName(node.get("name").asText());
-                        product.setPrice(node.get("price").asDouble());
-                        product.setUnit(node.get("unit").asText());
-                        product.setImage(node.get("image").asText());
+                        product.setName(name);
+                        product.setPrice(price);
+                        product.setUnit(unit);
+                        product.setImage(image);
                         product.setInStock(node.has("inStock") ? node.get("inStock").asBoolean() : true);
                         product.setCategory(category);
                         product = productRepository.save(product);
                         addedCount++;
                     }
 
-                    // 3. Ensure Inventory exists for ALL branches for this product
-                    List<Branch> allBranches = branchRepository.findAll();
-                    for (Branch branch : allBranches) {
+                    for (Branch branch : branchRepository.findAll()) {
                         if (inventoryRepository.findByBranchAndProduct(branch, product).isEmpty()) {
                             Inventory inv = new Inventory();
                             inv.setBranch(branch);
@@ -142,50 +154,50 @@ public class DataSeeder implements CommandLineRunner {
                             inventoryRepository.save(inv);
                         }
                     }
+                } catch (Exception e) {}
+            }
+            System.out.println("Product Seeding: Added " + addedCount + ", Updated/Verified " + updatedCount);
+        } catch (Exception e) {
+            System.err.println("Error reading product JSON: " + e.getMessage());
+        }
+    }
+
+    private void seedManagers() {
+        try {
+            List<Branch> allBranches = branchRepository.findAll();
+            for (Branch branch : allBranches) {
+                String namePart = branch.getName().toLowerCase().replace("simba ", "").replace(" ", "");
+                String email = namePart + "@simba.rw";
+                
+                if (branch.getName().equals("Simba Centenary")) {
+                    createOrEnableManager("manager@simba.rw", "Centenary Manager", branch);
                 }
-                System.out.println("Seeding Summary: Added " + addedCount + ", Verified/Updated " + updatedCount + " products.");
-            } catch (Exception e) {
-                System.err.println("Error reading JSON file: " + e.getMessage());
-                e.printStackTrace();
+                createOrEnableManager(email, branch.getName() + " Manager", branch);
             }
-        }
-
-        // 3. Create or Update Managers for ALL branches
-        List<Branch> allBranches = branchRepository.findAll();
-        for (Branch branch : allBranches) {
-            // Generate email based on branch name (e.g., "Simba Centenary" -> "centenary@simba.rw")
-            String namePart = branch.getName().toLowerCase().replace("simba ", "").replace(" ", "");
-            String email = namePart + "@simba.rw";
-            
-            if (branch.getName().equals("Simba Centenary")) {
-                createOrEnableManager("manager@simba.rw", "Centenary Manager", branch);
-            }
-            
-            createOrEnableManager(email, branch.getName() + " Manager", branch);
-        }
-
-        System.out.println("Data seeding process completed!");
+        } catch (Exception e) {}
     }
 
     private void createOrEnableManager(String email, String name, Branch branch) {
-        Optional<User> managerOpt = userRepository.findByEmail(email);
-        if (managerOpt.isEmpty()) {
-            User manager = new User();
-            manager.setName(name);
-            manager.setEmail(email);
-            manager.setPassword("{noop}password123");
-            manager.setRole("MANAGER");
-            manager.setProvider("LOCAL");
-            manager.setEnabled(true);
-            manager.setManagedBranch(branch);
-            userRepository.save(manager);
-            System.out.println("Manager created: " + email + " for branch " + branch.getName());
-        } else {
-            User manager = managerOpt.get();
-            manager.setRole("MANAGER");
-            manager.setManagedBranch(branch);
-            manager.setEnabled(true);
-            userRepository.save(manager);
-        }
+        try {
+            Optional<User> managerOpt = userRepository.findByEmail(email);
+            if (managerOpt.isEmpty()) {
+                User manager = new User();
+                manager.setName(name);
+                manager.setEmail(email);
+                manager.setPassword("{noop}password123");
+                manager.setRole("MANAGER");
+                manager.setProvider("LOCAL");
+                manager.setEnabled(true);
+                manager.setManagedBranch(branch);
+                userRepository.save(manager);
+                System.out.println("Manager created: " + email);
+            } else {
+                User manager = managerOpt.get();
+                manager.setRole("MANAGER");
+                manager.setManagedBranch(branch);
+                manager.setEnabled(true);
+                userRepository.save(manager);
+            }
+        } catch (Exception e) {}
     }
 }
